@@ -19,7 +19,9 @@ public class Stats {
 
     private final float titanThoriumBuildingDamageMultiplier = ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier;
     private final float titanThoriumSplashDamage = ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamage;
+    private final float titanThoriumSplashDamageRadius = ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamageRadius;
     private final boolean titanThoriumSplashDamagePierce = ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamagePierce;
+    private final float titanReload = ((ItemTurret) Blocks.titan).reload;
 
     private Stats() {}
 
@@ -35,6 +37,8 @@ public class Stats {
         ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier = titanThoriumBuildingDamageMultiplier;
         ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamage = titanThoriumSplashDamage;
         ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamagePierce = titanThoriumSplashDamagePierce;
+        ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamageRadius = titanThoriumSplashDamageRadius;
+        ((ItemTurret) Blocks.titan).reload = titanReload;
     }
 
     public static void updateStats() {
@@ -50,9 +54,11 @@ public class Stats {
                 ((ItemTurret) Blocks.cyclone).ammoTypes.get(Items.plastanium).splashDamage = 95f;
                 ((ItemTurret) Blocks.cyclone).ammoTypes.get(Items.surgeAlloy).splashDamage = 125f;
 
-                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier = 0.4f;
-                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamage = 180f;
+                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier = 0.6f;
+                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamage = 80f;
                 ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamagePierce = true;
+                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamageRadius = 45f;
+                ((ItemTurret) Blocks.titan).reload = 180f;
             }
             else {
                 previousStats.apply();

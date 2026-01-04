@@ -17,7 +17,6 @@ import arc.scene.event.InputEvent;
 import arc.scene.event.InputListener;
 import arc.scene.event.Touchable;
 import arc.scene.ui.layout.Scl;
-import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.Tmp;
 import mindurka.MRules;
@@ -243,6 +242,26 @@ public class OMapView extends MapView {
         Lines.rect(centerx - sclwidth / 2 - 1, centery - sclheight / 2 - 1, sclwidth + 2, sclheight + 2);
         Vars.editor.renderer.draw(centerx - sclwidth / 2 + Core.scene.marginLeft, centery - sclheight / 2 + Core.scene.marginBottom, sclwidth, sclheight);
         Draw.reset();
+
+        if (isGrid()) {
+            Draw.color(Color.gray);
+            image.setBounds(centerx - sclwidth / 2, centery - sclheight / 2, sclwidth, sclheight);
+            image.draw();
+
+            Lines.stroke(2f);
+            Draw.color(Pal.bulletYellowBack);
+            Lines.line(centerx - sclwidth/2f, centery - sclheight/4f, centerx + sclwidth/2f, centery - sclheight/4f);
+            Lines.line(centerx - sclwidth/4f, centery - sclheight/2f, centerx - sclwidth/4f, centery + sclheight/2f);
+            Lines.line(centerx - sclwidth/2f, centery + sclheight/4f, centerx + sclwidth/2f, centery + sclheight/4f);
+            Lines.line(centerx + sclwidth/4f, centery - sclheight/2f, centerx + sclwidth/4f, centery + sclheight/2f);
+
+            Lines.stroke(3f);
+            Draw.color(Pal.accent);
+            Lines.line(centerx - sclwidth/2f, centery, centerx + sclwidth/2f, centery);
+            Lines.line(centerx, centery - sclheight/2f, centerx, centery + sclheight/2f);
+
+            Draw.reset();
+        }
 
         if (MVars.rules.gamemode == MRules.Gamemode.forts) {
             if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect ||

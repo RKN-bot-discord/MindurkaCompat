@@ -54,7 +54,7 @@ public class Stats {
                 ((ItemTurret) Blocks.cyclone).ammoTypes.get(Items.plastanium).splashDamage = 95f;
                 ((ItemTurret) Blocks.cyclone).ammoTypes.get(Items.surgeAlloy).splashDamage = 125f;
 
-                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier = 0.6f;
+                ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).buildingDamageMultiplier = 0.01f;
                 ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamage = 80f;
                 ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamagePierce = true;
                 ((ItemTurret) Blocks.titan).ammoTypes.get(Items.thorium).splashDamageRadius = 45f;

@@ -1,0 +1,34 @@
+package mindurka;
+
+import mindurka.ui.*;
+import mindustry.Vars;
+import mindustry.editor.MapView;
+import mindustry.ui.dialogs.CustomRulesDialog;
+
+public class MVars {
+    private MVars() {}
+
+    public static MRules rules = new MRules();
+
+    public static MapView oldMapView;
+    public static OMapView mapView;
+    public static OMapEditor mapEditor;
+    public static OEditorDialog editorDialog;
+    public static OCustomRulesDialog customRulesDialog;
+    public static ToolOptions toolOptions = new ToolOptions();
+
+    private static BitMap mapbits = null;
+    public static BitMap mapbits() {
+        if (mapbits == null || mapbits.width != Vars.world.width() || mapbits.height != Vars.world.height()) {
+            mapbits = BitMap.of(Vars.world.tiles);
+        }
+        return mapbits;
+    }
+    private static BitMap mapbits2 = null;
+    public static BitMap mapbits2() {
+        if (mapbits2 == null || mapbits2.width != Vars.world.width() || mapbits2.height != Vars.world.height()) {
+            mapbits2 = BitMap.of(Vars.world.tiles);
+        }
+        return mapbits2;
+    }
+}

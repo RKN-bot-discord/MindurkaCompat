@@ -1,5 +1,8 @@
 package mindurka;
 
+import mindurka.ui.OCustomRulesDialog;
+import mindurka.ui.OEditorDialog;
+import mindurka.ui.OMapEditor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.gen.Building;
@@ -18,5 +21,14 @@ public class Injects {
                 }
             };
         });
+
+        // I have no idea what any of this does, but hopefully it works.
+
+        MVars.oldMapView = Vars.ui.editor.getView();
+
+        OMapEditor.inject();
+        MVars.mapEditor = (OMapEditor) Vars.editor;
+        Vars.ui.editor = MVars.editorDialog = new OEditorDialog(MVars.mapEditor, Vars.ui.editor);
+        OCustomRulesDialog.inject();
     }
 }

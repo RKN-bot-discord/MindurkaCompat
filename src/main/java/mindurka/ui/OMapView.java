@@ -1,0 +1,354 @@
+package mindurka.ui;
+
+import arc.Core;
+import arc.graphics.Color;
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.Fill;
+import arc.graphics.g2d.Lines;
+import arc.graphics.g2d.ScissorStack;
+import arc.input.GestureDetector;
+import arc.input.KeyCode;
+import arc.math.Mathf;
+import arc.math.geom.Point2;
+import arc.math.geom.Rect;
+import arc.math.geom.Vec2;
+import arc.scene.Element;
+import arc.scene.event.InputEvent;
+import arc.scene.event.InputListener;
+import arc.scene.event.Touchable;
+import arc.scene.ui.layout.Scl;
+import arc.util.Log;
+import arc.util.Nullable;
+import arc.util.Tmp;
+import mindurka.MRules;
+import mindurka.MVars;
+import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.editor.MapView;
+import mindustry.graphics.Pal;
+import mindustry.ui.GridImage;
+
+public class OMapView extends MapView {
+    private final GridImage image = new GridImage(0, 0);
+
+    private @Nullable PreviewToolContext previewMap = null;
+
+    private @Nullable MouseAction mousea = null;
+    public @Nullable SpecialEditorAction editorAction = null;
+
+    private final Rect rect = new Rect();
+    private float offsetx, offsety;
+    private float zoom = 1f;
+    private float mousex, mousey;
+
+    private float startx, starty;
+    private float prevx = -999, prevy = -999;
+    private boolean dragging;
+    public boolean redrawPreview;
+
+    private final Vec2 vec = new Vec2();
+
+    public OMapView() {
+        MVars.oldMapView.setTool(mindustry.editor.EditorTool.zoom);
+
+        Core.input.getInputProcessors().insert(0, new GestureDetector(20, 0.5f, 2, 0.15f, this));
+        touchable = Touchable.enabled;
+
+        { // No need to process Mindustry's events
+            @Nullable InputListener listener = (InputListener) getListeners().find(it -> it instanceof InputListener);
+            if (listener != null) removeListener(listener);
+        }
+        addListener(new InputListener() {
+            @Override
+            public boolean mouseMoved(InputEvent event, float x, float y) {
+                mousex = x;
+                mousey = y;
+
+                requestScroll();
+
+                return false;
+            }
+
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, Element fromActor) {
+                requestScroll();
+            }
+
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode button) {
+                // TODO: Handle resize/move gesture
+                if (pointer != 0) {
+                    return false;
+                }
+
+                if (mousea != null && !(mousea instanceof MouseAction.Cancelled)) {
+                    MouseAction prev = mousea;
+                    mousea = MouseAction.Cancelled.begin();
+                    dragging = false;
+                    if (!prev.cancelForgets()) prev.end(x, y);
+                    return true;
+                }
+
+                // Krita/Voidsprite/iBIS/AnyImageEdtiorInExistence-like binds cuz they are infinitely better than
+                // whatever the fuck Anuke cooked, and you're obligated to agree.
+                if (Vars.mobile || button == KeyCode.mouseLeft) {
+                    // To be entirely fair, if your tool is zoom this is the same as zoom action.
+                    if (editorAction != null) {
+                        mousea = MouseAction.Draw.Cancelled.begin();
+                        SpecialEditorAction prev = editorAction;
+                        editorAction = null;
+                        dragging = false;
+                        prev.clicked(OMapView.this, x, y);
+                        redrawPreview = true;
+                        return true;
+                    } else {
+                        mousea = MouseAction.Draw.begin(x, y, MVars.toolOptions.tool);
+                    }
+                } else if (button == KeyCode.mouseRight) {
+                    // No, I refuse to use the lastTool bullshit for this.
+                    if (editorAction == null)
+                        mousea = MouseAction.Erase.begin(x, y, MVars.toolOptions.tool);
+                    else {
+                        editorAction = null;
+                        redrawPreview = true;
+                        return true;
+                    }
+                } else if (button == KeyCode.mouseMiddle) {
+                    if (Core.input.ctrl())
+                        mousea = MouseAction.CtrlZoom.begin(y);
+                    else
+                        mousea = MouseAction.Drag.begin(x, y);
+                } else return true;
+
+                mousex = x;
+                mousey = y;
+                startx = x;
+                starty = y;
+                dragging = true;
+
+                mousea.move(mousex, mousey);
+
+                return true;
+            }
+
+            @Override
+            public void touchDragged(InputEvent event, float x, float y, int pointer) {
+                mousex = x;
+                mousey = y;
+
+                if (mousea != null) mousea.move(x, y);
+            }
+
+            @Override
+            public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button){
+                if (pointer != 0) return;
+
+                mousex = x;
+                mousey = y;
+                dragging = false;
+                redrawPreview = true;
+
+                if (mousea != null) {
+                    mousea.end(x, y);
+                    if (mousea instanceof MouseAction.Draw || mousea instanceof MouseAction.Erase) {
+                        MVars.mapEditor.flushOp();
+                    }
+                    mousea = null;
+                }
+            }
+
+            @Override
+            public boolean scrolled(InputEvent event, float x, float y, float amountX, float amountY) {
+                logScaleBy(amountY);
+
+                return true;
+            }
+        });
+
+        update(() -> {
+            if (mousea != null) mousea.update();
+        });
+    }
+
+    @Override
+    public mindustry.editor.EditorTool getTool() {
+        return null;
+    }
+
+    @Override
+    public Point2 project(float x, float y){
+        float ratio = 1f / ((float)Vars.editor.width() / Vars.editor.height());
+        float size = Math.min(width, height);
+        float sclwidth = size * zoom;
+        float sclheight = size * zoom * ratio;
+        x = (x - getWidth() / 2 + sclwidth / 2 - offsetx * zoom) / sclwidth * Vars.editor.width();
+        y = (y - getHeight() / 2 + sclheight / 2 - offsety * zoom) / sclheight * Vars.editor.height();
+
+        if(Vars.editor.drawBlock.size % 2 == 0){
+            return Tmp.p1.set((int)(x - 0.5f), (int)(y - 0.5f));
+        }else{
+            return Tmp.p1.set((int)x, (int)y);
+        }
+    }
+
+    public Vec2 unproject(int x, int y){
+        float ratio = 1f / ((float)MVars.mapEditor.width() / MVars.mapEditor.height());
+        float size = Math.min(width, height);
+        float sclwidth = size * zoom;
+        float sclheight = size * zoom * ratio;
+        float px = ((float)x / MVars.mapEditor.width()) * sclwidth + offsetx * zoom - sclwidth / 2 + getWidth() / 2;
+        float py = ((float)y / MVars.mapEditor.height()) * sclheight
+                + offsety * zoom - sclheight / 2 + getHeight() / 2;
+        return vec.set(px, py).add(this.x, this.y);
+    }
+
+    public void moveByScaled(float dx, float dy) {
+        offsetx += dx / zoom;
+        offsety += dy / zoom;
+    }
+
+    public void logScaleBy(float dy) {
+        float linearZoom = Mathf.log2(zoom);
+        linearZoom -= dy;
+        if (linearZoom >= 10f) linearZoom = 10f;
+        if (linearZoom <= 0.01f) linearZoom = 0.01f;
+        zoom = Mathf.pow(2f, linearZoom);
+    }
+
+    public void mouseAction(MouseAction newAction) {
+        mousea = newAction;
+    }
+
+    public float mousex() { return mousex; }
+    public float mousey() { return mousey; }
+
+    @Override
+    public void draw() {
+        float ratio = 1f / ((float) MVars.mapEditor.width() / MVars.mapEditor.height());
+        float size = Math.min(width, height);
+        float sclwidth = size * zoom;
+        float sclheight = size * zoom * ratio;
+        float centerx = x + width / 2 + offsetx * zoom;
+        float centery = y + height / 2 + offsety * zoom;
+        float scaling = zoom * Math.min(width, height) / MVars.mapEditor.width();
+
+        image.setImageSize(MVars.mapEditor.width(), MVars.mapEditor.height());
+
+        if (!ScissorStack.push(rect.set(x + Core.scene.marginLeft, y + Core.scene.marginBottom, width, height))) {
+            return;
+        }
+
+        Draw.color(Pal.remove);
+        Lines.stroke(2f);
+        Lines.rect(centerx - sclwidth / 2 - 1, centery - sclheight / 2 - 1, sclwidth + 2, sclheight + 2);
+        Vars.editor.renderer.draw(centerx - sclwidth / 2 + Core.scene.marginLeft, centery - sclheight / 2 + Core.scene.marginBottom, sclwidth, sclheight);
+        Draw.reset();
+
+        if (MVars.rules.gamemode == MRules.Gamemode.forts) {
+            if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect ||
+                    MVars.rules.fortsPlotKind == MRules.FortsPlotKind.square) {
+                int plotWidth, plotHeight, wallsLen, shiftX, shiftY;
+
+                plotWidth = MVars.rules.fortsPlotParam1i;
+                plotHeight = MVars.rules.fortsPlotParam1i;
+                wallsLen = MVars.rules.fortsPlotParam3i;
+                shiftX = MVars.rules.fortsPlotParam4i;
+                shiftY = MVars.rules.fortsPlotParam5i;
+
+                if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect)
+                    plotHeight = MVars.rules.fortsPlotParam2i;
+
+                int jX = plotWidth + wallsLen;
+                if (shiftX < 0) shiftX = jX - (shiftX % jX);
+                if (shiftX > wallsLen) shiftX = (shiftX % jX);
+
+                int jY = plotHeight + wallsLen;
+                if (shiftY < 0) shiftY = jY - (shiftY % jY);
+                if (shiftY > wallsLen) shiftY = (shiftY % jY);
+
+                final float F = 0xFF;
+
+                Draw.color(0xE0 / F, 0xA8 / F, 0xA2 / F);
+                Lines.stroke(Scl.scl(1f));
+
+                int osy = shiftY;
+                for (; shiftX <= Vars.world.width() - jX; shiftX += jX) for (shiftY = osy; shiftY <= Vars.world.height() - jY; shiftY += jY) {
+                    Vec2 v$1 = unproject(shiftX, shiftY);
+                    float sx = v$1.x, sy = v$1.y;
+                    Vec2 v = unproject(shiftX + plotWidth, shiftY + plotHeight);
+                    Lines.rect(sx, sy, v.x - sx, v.y - sy);
+                }
+
+                Draw.reset();
+            }
+        }
+
+        if (MVars.toolOptions.selectedBlock == Blocks.cliff) {
+            Vars.world.tiles.eachTile(tile -> {
+                if (tile.block() == Blocks.cliff) {
+                    Draw.color(Color.valueOf("66887755"));
+                } else if (MVars.toolOptions.cliffAuto && MVars.toolOptions.fakeCliffsMap != null && MVars.toolOptions.fakeCliffsMap.toggled(tile.x, tile.y)) {
+                    Draw.color(Color.valueOf("aaccbb55"));
+                } else return;
+                Vec2 v$1 = unproject(tile.x, tile.y);
+                float sx = v$1.x, sy = v$1.y;
+                Vec2 v = unproject(tile.x + 1, tile.y + 1);
+                Fill.rect(sx + (v.x - sx) / 2, sy + (v.y - sy) / 2, v.x - sx, v.y - sy);
+                Draw.reset();
+            });
+        }
+
+        if (editorAction != null) {
+            editorAction.preview(this, mousex, mousey);
+        } else if (!(mousea instanceof MouseAction.Drag || mousea instanceof MouseAction.CtrlZoom || MVars.toolOptions.tool == EditorTool.zoom)) {
+            boolean rescan = mousex != prevx || mousey != prevy || redrawPreview;
+
+            if (previewMap == null || previewMap.bitmap.width != Vars.world.width() || previewMap.bitmap.height != Vars.world.height()) {
+                previewMap = new PreviewToolContext(BitMap.of(Vars.world.width(), Vars.world.height()));
+                rescan = true;
+            }
+            if (rescan) {
+                previewMap.zero();
+                Point2 s = project(mousex, mousey);
+                if (dragging) {
+                    int sx = s.x, sy = s.y;
+                    s = project(startx, starty);
+                    MVars.toolOptions.tool.touchedLine(previewMap, s.x, s.y, sx, sy);
+                } else MVars.toolOptions.tool.touched(previewMap, s.x, s.y, s.x, s.y);
+            }
+
+            // FIXME: Potential performance penalty for drawing a ton of one-length lines
+            if (previewMap.hasRegion) {
+                Draw.color(Pal.accent);
+                Lines.stroke(Scl.scl(2f));
+                for (int x = previewMap.startx; x <= previewMap.endx + 1; x++) for (int y = previewMap.starty; y <= previewMap.endy + 1; y++) {
+                    boolean enabled = previewMap.bitmap.toggled(x, y);
+                    if (enabled != previewMap.bitmap.toggled(x - 1, y)) {
+                        Vec2 s = unproject(x, y);
+                        float sx = s.x, sy = s.y;
+                        s = unproject(x, y + 1);
+                        Lines.line(sx, sy, s.x, s.y);
+                    }
+                    if (enabled != previewMap.bitmap.toggled(x, y - 1)) {
+                        Vec2 s = unproject(x + 1, y);
+                        float sx = s.x, sy = s.y;
+                        s = unproject(x, y);
+                        Lines.line(sx, sy, s.x, s.y);
+                    }
+                }
+                Draw.reset();
+            }
+
+            prevx = mousex;
+            prevy = mousey;
+            redrawPreview = false;
+        }
+
+        Draw.color(Pal.accent);
+        Lines.stroke(Scl.scl(3f));
+        Lines.rect(x, y, width, height);
+        Draw.reset();
+
+        ScissorStack.pop();
+    }
+}

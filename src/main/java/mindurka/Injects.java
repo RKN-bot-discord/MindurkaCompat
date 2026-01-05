@@ -30,5 +30,6 @@ public class Injects {
         MVars.mapEditor = (OMapEditor) Vars.editor;
         Vars.ui.editor = MVars.editorDialog = new OEditorDialog(MVars.mapEditor, Vars.ui.editor);
         OCustomRulesDialog.inject();
+        OMobileInput.inject();
     }
 }

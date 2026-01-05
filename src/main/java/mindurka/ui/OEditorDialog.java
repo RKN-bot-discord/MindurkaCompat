@@ -4,43 +4,73 @@ import arc.Core;
 import arc.files.Fi;
 import arc.func.Cons;
 import arc.graphics.Color;
+import arc.graphics.Pixmap;
 import arc.graphics.g2d.TextureRegion;
 import arc.input.KeyCode;
+import arc.math.Mathf;
+import arc.math.geom.Point2;
+import arc.scene.event.EventListener;
 import arc.scene.event.Touchable;
+import arc.scene.event.VisibilityListener;
+import arc.scene.style.Drawable;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.ImageButton;
 import arc.scene.ui.Label;
 import arc.scene.ui.ScrollPane;
 import arc.scene.ui.Slider;
+import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Table;
 import arc.struct.Seq;
+import arc.struct.StringMap;
 import arc.util.Align;
 import arc.util.Log;
+import arc.util.OS;
 import arc.util.Reflect;
+import arc.util.Strings;
+import arc.util.Structs;
+import arc.util.Time;
 import mindurka.MRules;
 import mindurka.MVars;
 import mindurka.Util;
 import mindustry.Vars;
 import mindustry.content.Blocks;
+import mindustry.content.UnitTypes;
+import mindustry.core.GameState;
+import mindustry.editor.EditorRenderer;
 import mindustry.editor.MapEditorDialog;
+import mindustry.editor.MapGenerateDialog;
+import mindustry.editor.MapInfoDialog;
+import mindustry.editor.MapLoadDialog;
+import mindustry.editor.MapResizeDialog;
 import mindustry.editor.MapView;
+import mindustry.editor.SectorGenerateDialog;
+import mindustry.game.Gamemode;
 import mindustry.game.Rules;
 import mindustry.game.Team;
+import mindustry.game.Teams;
+import mindustry.gen.Building;
+import mindustry.gen.Groups;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
+import mindustry.gen.Unit;
 import mindustry.io.MapIO;
 import mindustry.maps.Map;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.ui.dialogs.MapPlayDialog;
 import mindustry.world.Block;
 import mindustry.world.blocks.environment.OverlayFloor;
 import mindustry.world.blocks.storage.CoreBlock;
 import mindustry.world.meta.BuildVisibility;
+import mindustry.world.meta.Env;
 
 public class OEditorDialog extends MapEditorDialog {
     private final OMapView view;
     private final OMapEditor editor;
+    private BaseDialog menu;
 
+    private Rules lastSavedRules = null;
+    private boolean reloadMap = false;
     private boolean shownWithMap = false;
     private Map map;
     private Runnable refreshTools;
@@ -63,6 +93,16 @@ public class OEditorDialog extends MapEditorDialog {
         clearChildren();
         margin(0);
 
+        for (int i = 0; i < 3; i++) {
+            for (int o = getListeners().size - 1; o >= 0; o--) {
+                EventListener listener = getListeners().get(o);
+                if (listener instanceof VisibilityListener) {
+                    removeListener(listener);
+                    break;
+                }
+            }
+        }
+
         update(() -> {
             if (Core.scene.getKeyboardFocus() == this) {
                 doInput();
@@ -80,8 +120,6 @@ public class OEditorDialog extends MapEditorDialog {
                 Vars.logic.reset();
                 Vars.state.rules = new Rules();
                 editor.OBeginEdit(200, 200);
-            } else {
-                editor.OBeginEdit(map);
             }
             MVars.toolOptions.reset();
             MVars.rules.sync();
@@ -96,6 +134,8 @@ public class OEditorDialog extends MapEditorDialog {
         });
 
         shown(this::build);
+
+        buildMenu();
     }
 
     @Override
@@ -111,18 +151,99 @@ public class OEditorDialog extends MapEditorDialog {
         if (!Core.settings.getBool("landscape")) Vars.platform.endForceLandscape();
     }
 
+    public void resumeEditing() {
+        Vars.state.set(GameState.State.menu);
+        shownWithMap = true;
+        reloadMap = false;
+        show();
+        Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
+        Vars.state.rules = new Rules();
+        lastSavedRules = null;
+        // saved = false;
+        Reflect.invoke(EditorRenderer.class, editor.renderer, "recache", Util.noargs);
+    }
+
+    private void editInGame() {
+        menu.hide();
+        Vars.ui.loadAnd(() -> {
+            lastSavedRules = Vars.state.rules;
+            hide();
+            //only reset the player; logic.reset() will clear entities, which we do not want
+            Vars.state.teams = new Teams();
+            Vars.player.reset();
+            Gamemode.editor.apply(Vars.state.rules);
+            Vars.state.rules.limitMapArea = false;
+            Vars.state.rules.sector = null;
+            Vars.state.rules.fog = false;
+            Vars.state.map = new Map(StringMap.of(
+                    "name", "Editor Playtesting",
+                    "width", editor.width(),
+                    "height", editor.height()
+            ));
+            Vars.state.set(GameState.State.playing);
+            Vars.world.endMapLoad();
+            Vars.player.clearUnit();
+
+            for(Unit unit : Groups.unit){
+                if(unit.spawnedByCore){
+                    unit.remove();
+                }
+            }
+
+            Groups.build.clear();
+            Groups.weather.clear();
+            Vars.logic.play();
+
+            Point2 center = view.project(Core.graphics.getWidth()/2f, Core.graphics.getHeight()/2f);
+
+            CoreBlock.CoreBuild best = Vars.player.bestCore();
+
+            Vars.player.set(center.x * Vars.tilesize, center.y * Vars.tilesize);
+            Unit unit = (best != null ? ((CoreBlock)best.block).unitType
+                    : (Vars.state.rules.hasEnv(Env.scorching) ? UnitTypes.evoke : UnitTypes.alpha)).spawn(editor.drawTeam, Vars.player.x, Vars.player.y);
+            unit.spawnedByCore = true;
+            Vars.player.unit(unit);
+            Vars.player.set(unit);
+
+            Core.camera.position.set(unit.x, unit.y);
+        });
+    }
+
     @Override
     public void beginEditMap(Fi file) {
         Vars.ui.loadAnd(() -> {
             try {
                 shownWithMap = true;
                 map = MapIO.createMap(file, true);
+                editor.OBeginEdit(map);
                 show();
             } catch (Exception e) {
                 Log.err(e);
                 Vars.ui.showException("@editor.errorload", e);
             }
         });
+    }
+
+    private void playtest() {
+        menu.hide();
+        Map map = save();
+
+        if(map != null){
+            //skip dialog, play immediately when shift clicked
+            if(Core.input.shift()){
+                hide();
+                //auto pick best fit
+                Vars.control.playMap(map, map.applyRules(
+                        Gamemode.survival.valid(map) ? Gamemode.survival :
+                                Gamemode.attack.valid(map) ? Gamemode.attack :
+                                        Gamemode.sandbox), true
+                );
+            } else {
+                final MapPlayDialog playtestDialog = Reflect.get(MapEditorDialog.class, this, "playtestDialog");
+                playtestDialog.playListener = this::hide;
+                playtestDialog.show(map, true);
+            }
+        }
     }
 
     public void refreshTools() {
@@ -186,7 +307,6 @@ public class OEditorDialog extends MapEditorDialog {
                     tools.clear();
 
                     tools.button(Icon.menu, Styles.flati, () -> {
-                        BaseDialog menu = Reflect.get(MapEditorDialog.class, this, "menu");
                         if (!menu.isShown()) {
                             menu.show();
                         }
@@ -487,7 +607,6 @@ public class OEditorDialog extends MapEditorDialog {
 
             if (Core.input.keyTap(KeyCode.escape)) {
                 if (view.editorAction == null) {
-                    BaseDialog menu = Reflect.get(MapEditorDialog.class, this, "menu");
                     if (!menu.isShown()) {
                         menu.show();
                     }
@@ -512,5 +631,239 @@ public class OEditorDialog extends MapEditorDialog {
         // if(Core.input.keyTap(KeyCode.e)){
         //     editor.rotation = Mathf.mod(editor.rotation - 1, 4);
         // }
+    }
+
+    private void buildMenu() {
+        menu = new BaseDialog("@menu");
+        menu.addCloseButton();
+
+        float swidth = 180f;
+
+        menu.cont.table(t -> {
+            final MapGenerateDialog generateDialog = Reflect.get(MapEditorDialog.class, this, "generateDialog");
+            final MapLoadDialog loadDialog = Reflect.get(MapEditorDialog.class, this, "loadDialog");
+
+            t.defaults().size(swidth, 60f).padBottom(5).padRight(5).padLeft(5);
+
+            t.button("@editor.savemap", Icon.save, this::save);
+
+            t.button("@editor.mapinfo", Icon.pencil, () -> {
+                Reflect.<MapInfoDialog>get(MapEditorDialog.class, this, "infoDialog").show();
+                menu.hide();
+            });
+
+            t.row();
+
+            t.button("@editor.generate", Icon.terrain, () -> {
+                generateDialog.show(generateDialog::applyToEditor);
+                menu.hide();
+            });
+
+            t.button("@editor.resize", Icon.resize, () -> {
+                Reflect.<MapResizeDialog>get(MapEditorDialog.class, this, "resizeDialog").show();
+                menu.hide();
+            });
+
+            t.row();
+
+            t.button("@editor.import", Icon.download, () -> createDialog("@editor.import",
+                    "@editor.importmap", "@editor.importmap.description", Icon.download, (Runnable)loadDialog::show,
+                    "@editor.importfile", "@editor.importfile.description", Icon.file, (Runnable)() ->
+                            Vars.platform.showFileChooser(true, Vars.mapExtension, file -> Vars.ui.loadAnd(() -> {
+                                Vars.maps.tryCatchMapError(() -> {
+                                    if(MapIO.isImage(file)){
+                                        Vars.ui.showInfo("@editor.errorimage");
+                                    }else{
+                                        editor.beginEdit(MapIO.createMap(file, true));
+                                    }
+                                });
+                            })),
+
+                    "@editor.importimage", "@editor.importimage.description", Icon.fileImage, (Runnable)() ->
+                            Vars.platform.showFileChooser(true, "png", file ->
+                                    Vars.ui.loadAnd(() -> {
+                                        try{
+                                            Pixmap pixmap = new Pixmap(file);
+                                            editor.beginEdit(pixmap);
+                                            pixmap.dispose();
+                                        }catch(Exception e){
+                                            Vars.ui.showException("@editor.errorload", e);
+                                            Log.err(e);
+                                        }
+                                    })))
+            );
+
+            t.button("@editor.export", Icon.upload, () -> createDialog("@editor.export",
+                    "@editor.exportfile", "@editor.exportfile.description", Icon.file,
+                    (Runnable)() -> Vars.platform.export(editor.tags.get("name", "unknown"), Vars.mapExtension, file -> MapIO.writeMap(file, editor.createMap(file))),
+                    "@editor.exportimage", "@editor.exportimage.description", Icon.fileImage,
+                    (Runnable)() -> Vars.platform.export(editor.tags.get("name", "unknown"), "png", file -> {
+                        Pixmap out = MapIO.writeImage(editor.tiles());
+                        file.writePng(out);
+                        out.dispose();
+                    })));
+
+            t.row();
+
+            t.button("@editor.ingame", Icon.right, this::editInGame);
+
+            t.button("@editor.playtest", Icon.play, this::playtest);
+        });
+
+        menu.cont.row();
+
+        if (Vars.steam) {
+            menu.cont.button("@editor.publish.workshop", Icon.link, () -> {
+                Map builtin = Vars.maps.all().find(m -> m.name().equals(editor.tags.get("name", "").trim()));
+
+                if(editor.tags.containsKey("steamid") && builtin != null && !builtin.custom){
+                    Vars.platform.viewListingID(editor.tags.get("steamid"));
+                    return;
+                }
+
+                Map map = save();
+
+                if(editor.tags.containsKey("steamid") && map != null){
+                    Vars.platform.viewListing(map);
+                    return;
+                }
+
+                if(map == null) return;
+
+                if(map.tags.get("description", "").length() < 4){
+                    Vars.ui.showErrorMessage("@editor.nodescription");
+                    return;
+                }
+
+                if(!Structs.contains(Gamemode.all, g -> g.valid(map))){
+                    Vars.ui.showErrorMessage("@map.nospawn");
+                    return;
+                }
+
+                Vars.platform.publish(map);
+            }).padTop(-3).size(swidth * 2f + 10, 60f).update(b ->
+                    b.setText(editor.tags.containsKey("steamid") ?
+                            editor.tags.get("author", "").equals(Vars.steamPlayerName) ? "@workshop.listing" : "@view.workshop" :
+                            "@editor.publish.workshop"));
+
+            menu.cont.row();
+        }
+
+        menu.cont.button("@editor.sectorgenerate", Icon.terrain, () -> {
+            menu.hide();
+            Reflect.<SectorGenerateDialog>get(MapEditorDialog.class, this, "sectorGenDialog").show();
+        }).padTop(!Vars.steam ? -3 : 1).size(swidth * 2f + 10, 60f);
+
+        menu.cont.row();
+
+        //this is gated behind a property, because it's (1) not useful to most people, (2) confusing and (3) may crash or otherwise bug out
+        if(OS.hasProp("mindustry.editor.simulate.button")){
+
+            menu.cont.button("Simulate", Icon.logic, () -> {
+                menu.hide();
+
+                BaseDialog dialog = new BaseDialog("Simulate");
+
+                int[] seconds = {60 * 1};
+
+                dialog.cont.add("Seconds: ");
+                dialog.cont.field(seconds[0] + "", text -> seconds[0] = Strings.parseInt(text, 1)).valid(s -> Strings.parseInt(s, 9999999) < 10f * 60f);
+
+                dialog.addCloseButton();
+
+                dialog.buttons.button("@ok", Icon.ok, () -> {
+                    Vars.ui.loadAnd(() -> {
+
+                        float deltaScl = 2f;
+                        int steps = Mathf.ceil(seconds[0] * 60f / deltaScl);
+                        float oldDelta = Time.delta;
+                        Time.delta = deltaScl;
+
+                        Seq<Building> builds = new Seq<>();
+                        Time.clear();
+
+                        Vars.world.tiles.eachTile(t -> {
+                            if(t.build != null && t.isCenter() && t.block().update && t.build.allowUpdate()){
+                                builds.add(t.build);
+                                t.build.updateProximity();
+                            }
+                        });
+
+                        for(int i = 0; i < steps; i++){
+                            Time.update();
+                            for(Building build : builds){
+                                build.update();
+                            }
+                            Groups.powerGraph.update();
+                        }
+
+                        //spawned units will cause havoc, so clear them
+                        Groups.unit.clear();
+
+                        Time.clear();
+                        Time.delta = oldDelta;
+                    });
+
+                    dialog.hide();
+                }).size(210f, 64f);
+
+                dialog.show();
+
+            }).size(swidth * 2f + 10, 60f);
+
+            menu.cont.row();
+        }
+
+        menu.cont.button("@quit", Icon.exit, () -> {
+            tryExit();
+            menu.hide();
+        }).padTop(1).size(swidth * 2f + 10, 60f);
+    }
+
+    private void tryExit(){
+        Vars.ui.showConfirm("@confirm", "@editor.unsaved", this::hide);
+    }
+
+    /**
+     * Argument format:
+     * 0) button name
+     * 1) description
+     * 2) icon name
+     * 3) listener
+     */
+    private void createDialog(String title, Object... arguments){
+        BaseDialog dialog = new BaseDialog(title);
+
+        float h = 90f;
+
+        dialog.cont.defaults().size(360f, h).padBottom(5).padRight(5).padLeft(5);
+
+        for(int i = 0; i < arguments.length; i += 4){
+            String name = (String)arguments[i];
+            String description = (String)arguments[i + 1];
+            Drawable iconname = (Drawable)arguments[i + 2];
+            Runnable listenable = (Runnable)arguments[i + 3];
+
+            TextButton button = dialog.cont.button(name, () -> {
+                listenable.run();
+                dialog.hide();
+                menu.hide();
+            }).left().margin(0).get();
+
+            button.clearChildren();
+            button.image(iconname).padLeft(10);
+            button.table(t -> {
+                t.add(name).growX().wrap();
+                t.row();
+                t.add(description).color(Color.gray).growX().wrap();
+            }).growX().pad(10f).padLeft(5);
+
+            button.row();
+
+            dialog.cont.row();
+        }
+
+        dialog.addCloseButton();
+        dialog.show();
     }
 }

@@ -3,6 +3,8 @@ package mindurka;
 public class Util {
     private Util() {}
 
+    public static Object[] noargs = new Object[0];
+
     public static boolean enabled(byte bitfield, int field) {
         if (field < 0 || field > 7) return false;
         return (((int) bitfield & 0xff) >> field & 1) == 1;

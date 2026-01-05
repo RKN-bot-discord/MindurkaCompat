@@ -1,5 +1,6 @@
 package mindurka.ui;
 
+import arc.files.Fi;
 import arc.graphics.Pixmap;
 import arc.struct.StringMap;
 import mindustry.Vars;
@@ -11,6 +12,8 @@ import mindustry.maps.Map;
 import mindustry.world.Tile;
 import mindustry.world.Tiles;
 import mindustry.world.WorldContext;
+
+import java.io.IOException;
 
 public class OMapEditor extends MapEditor {
     private final Context context = new Context();
@@ -43,6 +46,14 @@ public class OMapEditor extends MapEditor {
         createTiles(width, height);
         renderer.resize(width, height);
         loading = false;
+    }
+
+    public void OBeginEdit(Fi file) {
+        try {
+            OBeginEdit(MapIO.createMap(file, true));
+        } catch (IOException e) {
+            Vars.ui.showException(e);
+        }
     }
 
     public void OBeginEdit(Map map) {

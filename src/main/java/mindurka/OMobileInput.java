@@ -16,8 +16,9 @@ import mindustry.world.Tile;
 
 public class OMobileInput extends MobileInput {
     public static void inject() {
-        if (Vars.control.input instanceof MobileInput)
-            Vars.control.input = new OMobileInput();
+        if (Vars.control.input instanceof MobileInput) {
+            Vars.control.setInput(new OMobileInput());
+        }
     }
 
     @Override

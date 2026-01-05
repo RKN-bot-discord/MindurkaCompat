@@ -79,7 +79,11 @@ tasks.register("jarAndroid") {
         //collect dependencies needed for desugaring
         def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")]).collect{ "--classpath $it.path" }.join(" ")
 
-        def buildToolsRoot = new File("$sdkRoot/build-tools/").listFiles().sort { x, y -> x.name <=> y.name }.first().absolutePath
+        def buildToolsRoot
+        if (project.hasProperty("buildToolsVersion"))
+            buildToolsRoot = new File("$sdkRoot/build-tools/${project.properties["buildToolsVersion"]}").absolutePath
+        else
+            buildToolsRoot = new File("$sdkRoot/build-tools/").listFiles().sort { x, y -> x.name <=> y.name }.first().absolutePath
 
         //dex and desugar files - this requires d8 in your PATH
         "env d8 $dependencies --min-api 14 --output ${jar.archiveBaseName.get()}Android.jar ${jar.archiveBaseName.get()}Desktop.jar"

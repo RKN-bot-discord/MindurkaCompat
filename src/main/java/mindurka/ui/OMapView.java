@@ -17,6 +17,10 @@ import arc.scene.event.InputEvent;
 import arc.scene.event.InputListener;
 import arc.scene.event.Touchable;
 import arc.scene.ui.layout.Scl;
+import arc.struct.IntSeq;
+import arc.struct.IntSet;
+import arc.struct.Seq;
+import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.Tmp;
 import mindurka.MRules;
@@ -44,6 +48,72 @@ public class OMapView extends MapView {
     private float prevx = -999, prevy = -999;
     private boolean dragging;
     public boolean redrawPreview;
+
+    public static class Touch {
+        public final int pointer;
+        public float x;
+        public float y;
+        public final IntSet buttons = new IntSet(1);
+
+        public Touch(int pointer) {
+            this.pointer = pointer;
+            this.x = x;
+            this.y = y;
+        }
+
+        public Touch xy(float x, float y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        }
+    }
+    public Touch[] activeTouches = new Touch[2];
+    public boolean containsTouch(int pointer) {
+        for (Touch touch : activeTouches) {
+            if (touch == null) continue;
+            if (touch.pointer != pointer) continue;
+            return true;
+        }
+        return false;
+    }
+    public int activeTouches() {
+        int num = 0;
+        for (Touch touch : activeTouches) if (touch != null) num += 1;
+        return num;
+    }
+    public boolean addTouch(int pointer, KeyCode button, float x, float y) {
+        for (int i = 0; i < activeTouches.length; i++) {
+            if (activeTouches[i] == null) {
+                activeTouches[i] = new Touch(pointer).xy(x, y);
+                activeTouches[i].buttons.add(button.ordinal());
+                Log.info("Added touch " + pointer + " (button " + button + ")" + "!");
+                return true;
+            } else if (activeTouches[i].pointer == pointer) {
+                activeTouches[i].xy(x, y);
+                activeTouches[i].buttons.add(button.ordinal());
+                Log.info("Appended to touch " + pointer + " (button " + button + ")" + "!");
+                return true;
+            }
+        }
+        return false;
+    }
+    public void removeTouch(int pointer, KeyCode button) {
+        for (int i = 0; i < activeTouches.length; i++) {
+            if (activeTouches[i] == null) continue;
+            activeTouches[i].buttons.remove(button.ordinal());
+            Log.info("Removed button " + button + " from touch " + pointer + "!");
+            if (activeTouches[i].buttons.size == 0) activeTouches[i] = null;
+            Log.info("Removed touch!");
+        }
+    }
+    public Touch touch(int pointer) {
+        for (Touch touch : activeTouches) {
+            if (touch == null) continue;
+            if (touch.pointer != pointer) continue;
+            return touch;
+        }
+        return null;
+    }
 
     private final Vec2 vec = new Vec2();
 
@@ -75,18 +145,40 @@ public class OMapView extends MapView {
 
             @Override
             public boolean touchDown(InputEvent event, float x, float y, int pointer, KeyCode button) {
-                // TODO: Handle resize/move gesture
-                if (pointer != 0) {
-                    return false;
+                if (pointer == 0) {
+                    mousex = x;
+                    mousey = y;
                 }
 
-                if (mousea != null && !(mousea instanceof MouseAction.Cancelled)) {
+                if (!addTouch(pointer, button, x, y)) return false;
+
+                Log.info("Check 1");
+
+                if (activeTouches() >= 2) {
+                    if (!(mousea instanceof MouseAction.TouchDrag)) {
+                        MVars.mapEditor.undoCurrentOp();
+
+                        mousea = MouseAction.TouchDrag.begin();
+                    }
+                }
+
+                Log.info("Check 2");
+
+                if (mousea instanceof MouseAction.TouchDrag) {
+                    return true;
+                }
+
+                Log.info("Check 3");
+
+                if (mousea != null && !(mousea instanceof MouseAction.Cancelled) && activeTouches[0].buttons.size > 1) {
                     MouseAction prev = mousea;
                     mousea = MouseAction.Cancelled.begin();
                     dragging = false;
                     if (!prev.cancelForgets()) prev.end(x, y);
                     return true;
                 }
+
+                Log.info("New action!");
 
                 // Krita/Voidsprite/iBIS/AnyImageEdtiorInExistence-like binds cuz they are infinitely better than
                 // whatever the fuck Anuke cooked, and you're obligated to agree.
@@ -132,27 +224,47 @@ public class OMapView extends MapView {
 
             @Override
             public void touchDragged(InputEvent event, float x, float y, int pointer) {
-                mousex = x;
-                mousey = y;
+                if (!containsTouch(pointer)) return;
+                touch(pointer).xy(x, y);
 
-                if (mousea != null) mousea.move(x, y);
+                if (activeTouches[0] != null && activeTouches[0].pointer == pointer) {
+                    mousex = x;
+                    mousey = y;
+                }
+
+                if (mousea != null) {
+                    mousea.move(x, y);
+                }
             }
 
             @Override
             public void touchUp(InputEvent event, float x, float y, int pointer, KeyCode button){
-                if (pointer != 0) return;
+                if (!containsTouch(pointer)) return;
 
-                mousex = x;
-                mousey = y;
-                dragging = false;
-                redrawPreview = true;
+                boolean isMain = activeTouches[0] != null && activeTouches[0].pointer == pointer;
+                removeTouch(pointer, button);
 
                 if (mousea != null) {
+                    Log.info("Mouse action was set!");
+
+                    if (mousea instanceof MouseAction.TouchDrag) {
+                        if (activeTouches() == 0) mousea = null;
+                        return;
+                    }
+                    Log.info("Not touch drag!");
+
+                    Log.info("activeTouches[0] = " + (activeTouches[0] == null ? "null" : "" + activeTouches[0].pointer));
+                    if (!isMain) return;
+
+                    Log.info("Ending action!");
+
                     mousea.end(x, y);
                     if (mousea instanceof MouseAction.Draw || mousea instanceof MouseAction.Erase) {
                         MVars.mapEditor.flushOp();
                     }
                     mousea = null;
+                    dragging = false;
+                    redrawPreview = true;
                 }
             }
 
@@ -316,6 +428,8 @@ public class OMapView extends MapView {
                 Draw.reset();
             });
         }
+
+        // Log.info(mousea == null ? "null" : mousea.getClass().getSimpleName());
 
         if (editorAction != null) {
             editorAction.preview(this, mousex, mousey);

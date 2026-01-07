@@ -7,8 +7,9 @@ import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Lines;
 import arc.math.geom.Point2;
 import arc.math.geom.Vec2;
-import arc.scene.Element;
-import arc.scene.ui.*;
+import arc.scene.ui.CheckBox;
+import arc.scene.ui.Image;
+import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Table;
@@ -27,9 +28,6 @@ import mindustry.game.Team;
 import mindustry.gen.Icon;
 import mindustry.graphics.Pal;
 import mindustry.ui.Styles;
-
-import javax.swing.*;
-import java.util.List;
 
 public class FortsTeamsWidget {
     private FortsTeamsWidget(Table root, Rules rules, MRules customRules) {
@@ -60,8 +58,6 @@ public class FortsTeamsWidget {
         boolean enabled;
         int teamId;
         FortsTeamRules teamRules;
-
-        Seq<Element> updateOnEnable;
 
         public @Nullable Team team() {
             if (teamId == -1) return null;
@@ -113,7 +109,6 @@ public class FortsTeamsWidget {
                 d.teamRules.playable = e;
                 d.teamRules.save(rules);
             }, () -> d.teamRules.playable, () -> d.enabled);
-            // d.updateOnEnable.add(playable.get());
 
             Cell<TextButton> setPlot = current.button("@rules.mindurka.fortsPlotKind.setPlot", () -> {
                 MVars.customRulesDialog.hide();
@@ -162,12 +157,11 @@ public class FortsTeamsWidget {
                 };
             });
             setPlot.update(button -> button.setDisabled(!d.enabled));
-            // d.updateOnEnable.add(setPlot.get());
         }, () -> d.shown).left().growX().row();
     }
 
     private void childFor(@Nullable Team team) {
-        final ChildCollapserData d = new ChildCollapserData(team, new Table(), false, true, false, team == null ? -1 : team.id, FortsTeamRules.loadOrDefault(team, rules, customRules), new Seq(2));
+        final ChildCollapserData d = new ChildCollapserData(team, new Table(), false, true, false, team == null ? -1 : team.id, FortsTeamRules.loadOrDefault(team, rules, customRules));
 
         d.table.table(table2 -> {
             if (team == null) {

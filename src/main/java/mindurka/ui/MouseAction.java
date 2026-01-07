@@ -1,6 +1,7 @@
 package mindurka.ui;
 
 import arc.Core;
+import arc.math.Mathf;
 import arc.math.geom.Point2;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -139,6 +140,47 @@ public abstract class MouseAction {
         @Override
         void update() {
             if (!Core.input.ctrl()) MVars.mapView.mouseAction(Drag.begin(MVars.mapView.mousex(), mouseY));
+        }
+    }
+
+    static class TouchDrag extends MouseAction {
+        private float midX;
+        private float midY;
+        private float dst;
+        private boolean active;
+
+        void recalc() {
+            active = MVars.mapView.activeTouches() == 2;
+            if (!active) return;
+
+            midX = mid(MVars.mapView.activeTouches[0].x, MVars.mapView.activeTouches[1].x);
+            midY = mid(MVars.mapView.activeTouches[0].y, MVars.mapView.activeTouches[1].y);
+            dst = Mathf.dst(MVars.mapView.activeTouches[0].x, MVars.mapView.activeTouches[0].y, MVars.mapView.activeTouches[1].x, MVars.mapView.activeTouches[1].y);
+        }
+
+        float mid(float a, float b) {
+            return (a + b) / 2;
+        }
+
+        public static TouchDrag begin() {
+            TouchDrag o = new TouchDrag();
+            o.recalc();
+            return o;
+        }
+
+        @Override
+        void update() {
+            float prevMidX = midX;
+            float prevMidY = midY;
+            float prevDst = dst;
+            boolean prevActive = active;
+
+            recalc();
+
+            if (!prevActive || !active) return;
+
+            MVars.mapView.moveByScaled(midX - prevMidX, midY - prevMidY);
+            MVars.mapView.logScaleBy((prevDst - dst) / 200);
         }
     }
 

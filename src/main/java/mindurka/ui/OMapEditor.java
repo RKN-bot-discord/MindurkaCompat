@@ -3,8 +3,10 @@ package mindurka.ui;
 import arc.files.Fi;
 import arc.graphics.Pixmap;
 import arc.struct.StringMap;
+import arc.util.Reflect;
 import mindustry.Vars;
 import mindustry.content.Blocks;
+import mindustry.editor.DrawOperation;
 import mindustry.editor.EditorTile;
 import mindustry.editor.MapEditor;
 import mindustry.io.MapIO;
@@ -85,6 +87,12 @@ public class OMapEditor extends MapEditor {
         brushSize = 1;
         drawBlock = Blocks.stone;
         tags = new StringMap();
+    }
+
+    public void undoCurrentOp() {
+        if (Reflect.get(MapEditor.class, this, "currentOp") == null) return;
+        Reflect.<DrawOperation>get(MapEditor.class, this, "currentOp").undo();
+        Reflect.set(MapEditor.class, this, "currentOp", null);
     }
 
     @Override

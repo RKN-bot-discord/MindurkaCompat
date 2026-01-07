@@ -2,7 +2,6 @@ package mindurka;
 
 import arc.Core;
 import arc.input.KeyCode;
-import arc.util.Log;
 import arc.util.Reflect;
 import mindustry.Vars;
 import mindustry.entities.units.BuildPlan;
@@ -24,7 +23,6 @@ public class OMobileInput extends MobileInput {
     @Override
     public boolean tap(float x, float y, int count, KeyCode button) {
         if (Vars.state.isMenu() || lineMode || locked()) return false;
-        Log.info("Tapped!");
 
         float worldx = Core.input.mouseWorld(x, y).x, worldy = Core.input.mouseWorld(x, y).y;
 
@@ -33,7 +31,6 @@ public class OMobileInput extends MobileInput {
 
         //ignore off-screen taps *elsewhere*
         boolean offscreen = cursor == null || Core.scene.hasMouse(x, y);
-        Log.info("Off-screen? " + offscreen);
         //if(cursor == null || Core.scene.hasMouse(x, y)) return false;
 
         if (!offscreen) Call.tileTap(Vars.player, cursor);

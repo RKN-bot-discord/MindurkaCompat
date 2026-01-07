@@ -3,7 +3,6 @@ package mindurka.ui;
 import arc.input.KeyCode;
 import arc.math.Mathf;
 import arc.struct.LongSeq;
-import arc.util.Log;
 import arc.util.Nullable;
 import mindurka.MRules;
 import mindurka.MVars;

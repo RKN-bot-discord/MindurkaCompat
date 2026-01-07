@@ -3,7 +3,6 @@ package mindurka;
 import arc.func.Cons;
 import arc.func.Cons2;
 import arc.struct.IntMap;
-import arc.util.Log;
 import arc.util.Nullable;
 import mindustry.Vars;
 import mindustry.content.Blocks;

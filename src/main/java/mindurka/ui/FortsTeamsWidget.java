@@ -137,7 +137,6 @@ public class FortsTeamsWidget {
                         } else if (metrics.unwrap().width != width || metrics.unwrap().height != height) {
                             Vars.ui.showErrorMessage("Failed to encode plot!\n\nFor string: " + MVars.rules.fortsTeamRules(team).platformAreaString + "\n\nSize mismatch");
                         }
-                        Log.info("Successfully set plot schematic");
                         return true;
                     }
 

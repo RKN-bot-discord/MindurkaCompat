@@ -761,7 +761,6 @@ public class OEditorDialog extends MapEditorDialog {
 
         //this is gated behind a property, because it's (1) not useful to most people, (2) confusing and (3) may crash or otherwise bug out
         if(OS.hasProp("mindustry.editor.simulate.button")){
-
             menu.cont.button("Simulate", Icon.logic, () -> {
                 menu.hide();
 

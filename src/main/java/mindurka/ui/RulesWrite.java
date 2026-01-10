@@ -2,24 +2,28 @@ package mindurka.ui;
 
 import arc.Core;
 import arc.func.Boolc;
+import arc.func.Boolf;
 import arc.func.Boolp;
 import arc.func.Cons;
 import arc.func.Floatc;
 import arc.func.Floatp;
 import arc.func.Intc;
 import arc.func.Intp;
+import arc.func.Prov;
 import arc.graphics.Color;
 import arc.scene.ui.ButtonGroup;
 import arc.scene.ui.CheckBox;
+import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import arc.struct.Seq;
-import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.Strings;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
+import mindustry.type.Item;
+import mindustry.type.ItemStack;
 import mindustry.ui.Styles;
 
 /**
@@ -29,6 +33,8 @@ import mindustry.ui.Styles;
  * widgets can reuse them.
  */
 public class RulesWrite {
+    private final OLoadoutDialog loadoutDialog = new OLoadoutDialog();
+
     private static final Boolp TRUE = () -> true;
 
     private final Table root;
@@ -141,9 +147,14 @@ public class RulesWrite {
 
         return ctl;
     }
+    public BoolCtl b(String tlKey, Boolp def, Boolc onClick) {
+        return w(tlKey, def, onClick);
+    }
 
     public static class IntCtl {
         public static final IntCtl throwaway = new IntCtl();
+
+        private Label label;
 
         public Boolp enabled = TRUE;
         public IntCtl enabled(Boolp value) {
@@ -169,6 +180,11 @@ public class RulesWrite {
             return this;
         }
 
+        public IntCtl label(String raw) {
+            if (label != null) label.setText(raw);
+            return this;
+        }
+
         int _prevValue;
     }
     public IntCtl w(String tlKey, Intp def, Intc onClick) {
@@ -179,8 +195,8 @@ public class RulesWrite {
 
         Cell<Table> cell = root.table(t -> {
             t.left();
-            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
-                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            ctl.label = t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray)).get();
             t.field(ctl._prevValue + "", s -> {
                         int i = Strings.parseInt(s);
                         ctl._prevValue = i;
@@ -193,8 +209,7 @@ public class RulesWrite {
                             ctl._prevValue = i;
                             a.setText(i + "");
                         }
-                    })
-                    .padRight(100f).marginTop(0).marginBottom(0)
+                    }).marginTop(0).marginBottom(0)
                     .valid(f -> Strings.parseInt(f) >= ctl.min && Strings.parseInt(f) <= ctl.max).width(120f).left();
         }).padTop(0);
         cell.pad(6).padTop(0).get().left().row();
@@ -257,8 +272,7 @@ public class RulesWrite {
                             ctl._prevValue = f;
                             a.setText(f + "");
                         }
-                    })
-                    .padRight(100f).marginTop(0).marginBottom(0)
+                    }).marginTop(0).marginBottom(0)
                     .valid(f -> Strings.parseFloat(f) >= ctl.min && Strings.parseFloat(f) <= ctl.max).width(120f).left();
         }).padTop(0);
         cell.pad(6).padTop(0).get().left().row().marginTop(0);
@@ -270,11 +284,23 @@ public class RulesWrite {
         return w(tlKey, def, onClick);
     }
 
+    public void loadout(String tlKey, int capacity, Prov<Seq<ItemStack>> loadout, Boolf<Item> verifier,
+                        Runnable resetter, Runnable updater, Runnable hider) {
+        button(tlKey, () -> loadoutDialog.show(capacity, loadout.get(), verifier,
+                resetter, updater, hider));
+    }
+
+    public void button(String tlKey, Runnable click) {
+        if (!shouldAdd(tlKey)) return;
+
+        root.button("@" + tlKey, click).left().width(300f).row();
+    }
+
     public void spacer() {
         if (!canPlaceSpacer) return;
         canPlaceSpacer = false;
 
-        Cell<Table> table = root.table().fillX().height(4f);
+        root.table().fillX().height(8f).minHeight(8f).maxHeight(8f);
         root.row();
     }
 

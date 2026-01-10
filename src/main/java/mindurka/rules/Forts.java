@@ -40,7 +40,7 @@ public class Forts extends Gamemode {
     public static final String NEOPLASIA_DELAY = NEOPLASIA_PREFIX+".delay";
     public static final String NEOPLASIA_COOLDOWN = NEOPLASIA_PREFIX+".cooldown";
     public static final String NEOPLASIA_LENGTH = NEOPLASIA_PREFIX+".length";
-    public static final String NEOPLASIA_PROGRESS_DELAY = NEOPLASIA_PREFIX+".progress_delay";
+    public static final String NEOPLASIA_PROGRESS_SPEED = NEOPLASIA_PREFIX+".progress_speed";
     public static final String NEOPLASIA_DAMAGE = NEOPLASIA_PREFIX+".damage";
     public static final String NEOPLASIA_BLOCK = NEOPLASIA_PREFIX+".block";
 
@@ -91,7 +91,7 @@ public class Forts extends Gamemode {
                 neoplasiaDelay = read.r(NEOPLASIA_DELAY, 1.25f);
                 neoplasiaCooldown = read.r(NEOPLASIA_COOLDOWN, 0.25f);
                 neoplasiaLength = read.r(NEOPLASIA_LENGTH, 40);
-                neoplasiaProgressDelay = read.r(NEOPLASIA_PROGRESS_DELAY, 0.05f);
+                neoplasiaProgressSpeed = read.r(NEOPLASIA_PROGRESS_SPEED, 80f);
                 neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 750f);
                 neoplasiaBlock = read.r(NEOPLASIA_BLOCK, Blocks.neoplasiaReactor);
             }
@@ -99,8 +99,31 @@ public class Forts extends Gamemode {
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
-            write.w("rules.mindurka.enable_1va", () -> enable1va(), this::enable1va);
-            write.w("rules.mindurka.enable_vnw", () -> enableVnw(), this::enableVnw);
+            write.b("rules.mindurka.enable_1va", this::enable1va, this::enable1va);
+            write.b("rules.mindurka.enable_vnw", this::enableVnw, this::enableVnw);
+            write.spacer();
+
+            write.b("rules.mindurka.thor.enabled", this::thorEnabled, this::thorEnabled);
+            write.f("rules.mindurka.thor.delay", this::thorDelay, this::thorDelay).enabled(this::thorEnabled).min(0);
+            write.f("rules.mindurka.thor.cooldown", this::thorCooldown, this::thorCooldown).enabled(this::thorEnabled).min(0);
+            write.f("rules.mindurka.thor.damageMultiplier", this::thorDamageMultiplier, this::thorDamageMultiplier).enabled(this::thorEnabled).min(0);
+            write.f("rules.mindurka.thor.radiusMultiplier", this::thorRadiusMultiplier, this::thorRadiusMultiplier).enabled(this::thorEnabled).min(0);
+            write.spacer();
+
+            write.b("rules.mindurka.impact.enabled", this::impactEnabled, this::impactEnabled);
+            write.f("rules.mindurka.impact.delay", this::impactDelay, this::impactDelay).enabled(this::impactEnabled).min(0);
+            write.f("rules.mindurka.impact.cooldown", this::impactCooldown, this::impactCooldown).enabled(this::impactEnabled).min(0);
+            write.f("rules.mindurka.impact.duration", this::impactDuration, this::impactDuration).enabled(this::impactEnabled).min(0);
+            write.f("rules.mindurka.impact.explosionDamage", this::impactExplosionDamage, this::impactExplosionDamage).enabled(this::impactEnabled).min(0);
+            write.f("rules.mindurka.impact.explosionRadius", this::impactExplosionRadius, this::impactExplosionRadius).enabled(this::impactEnabled).min(0);
+            write.b("rules.mindurka.impact.instakill", this::impactInstakill, this::impactInstakill).enabled(this::impactEnabled);
+            write.spacer();
+
+            write.b("rules.mindurka.neoplasia.enabled", this::neoplasiaEnabled, this::neoplasiaEnabled);
+            write.f("rules.mindurka.neoplasia.delay", this::neoplasiaDelay, this::neoplasiaDelay).enabled(this::neoplasiaEnabled).min(0);
+            write.f("rules.mindurka.neoplasia.cooldown", this::neoplasiaCooldown, this::neoplasiaCooldown).enabled(this::neoplasiaEnabled).min(0);
+            write.f("rules.mindurka.neoplasia.progressSpeed", this::neoplasiaProgressSpeed, this::neoplasiaProgressSpeed).enabled(this::neoplasiaEnabled).min(0);
+            write.f("rules.mindurka.neoplasia.damage", this::neoplasiaDamage, this::neoplasiaDamage).enabled(this::neoplasiaEnabled).min(0);
             write.spacer();
 
             write.selection("editor.mindurka.fortsPlotKind", addItem -> {
@@ -280,11 +303,11 @@ public class Forts extends Gamemode {
             return this;
         }
 
-        private float neoplasiaProgressDelay;
-        public float neoplasiaProgressDelay() { return neoplasiaProgressDelay; }
-        public Impl neoplasiaProgressDelay(float value) {
-            neoplasiaProgressDelay = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_PROGRESS_DELAY, value); }
+        private float neoplasiaProgressSpeed;
+        public float neoplasiaProgressSpeed() { return neoplasiaProgressSpeed; }
+        public Impl neoplasiaProgressSpeed(float value) {
+            neoplasiaProgressSpeed = value;
+            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_PROGRESS_SPEED, value); }
             return this;
         }
 
@@ -326,7 +349,7 @@ public class Forts extends Gamemode {
             rules.tags.remove(NEOPLASIA_DELAY);
             rules.tags.remove(NEOPLASIA_COOLDOWN);
             rules.tags.remove(NEOPLASIA_LENGTH);
-            rules.tags.remove(NEOPLASIA_PROGRESS_DELAY);
+            rules.tags.remove(NEOPLASIA_PROGRESS_SPEED);
             rules.tags.remove(NEOPLASIA_DAMAGE);
             rules.tags.remove(NEOPLASIA_BLOCK);
 
@@ -375,7 +398,8 @@ public class Forts extends Gamemode {
                     Items.beryllium, 300
             ));
             rules.revealedBlocks.addAll(
-                    Blocks.slagCentrifuge
+                    Blocks.slagCentrifuge,
+                    Blocks.heatReactor
             );
             rules.bannedBlocks.addAll(
                     Blocks.cryofluidMixer,

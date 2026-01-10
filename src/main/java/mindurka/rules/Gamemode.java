@@ -51,8 +51,10 @@ public abstract class Gamemode {
             rules.schematicsAllowed = true;
             rules.loadout.clear();
             rules.bannedBlocks.clear();
+            rules.revealedBlocks.clear();
             rules.hideBannedBlocks = false;
             rules.infiniteResources = false;
+            rules.planet.applyRules(rules, true);
 
             // Content patches apparently must be set separately.
 

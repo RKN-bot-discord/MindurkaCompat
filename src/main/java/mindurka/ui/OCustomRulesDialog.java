@@ -1,12 +1,9 @@
 package mindurka.ui;
 
 import arc.Core;
-import arc.func.Intc;
 import arc.scene.event.EventListener;
 import arc.scene.event.VisibilityListener;
-import arc.scene.ui.ButtonGroup;
 import arc.scene.ui.ScrollPane;
-import arc.scene.ui.TextButton;
 import arc.scene.ui.TextField;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
@@ -16,14 +13,25 @@ import arc.util.Reflect;
 import mindurka.MVars;
 import mindurka.rules.Gamemode;
 import mindustry.Vars;
+import mindustry.content.Items;
+import mindustry.ctype.ContentType;
+import mindustry.editor.BannedContentDialog;
 import mindustry.editor.MapEditorDialog;
 import mindustry.editor.MapInfoDialog;
 import mindustry.game.Rules;
 import mindustry.gen.Icon;
+import mindustry.type.ItemStack;
+import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.CustomRulesDialog;
+import mindustry.world.Block;
 
 public class OCustomRulesDialog extends CustomRulesDialog {
+
+    private BannedContentDialog<Block> bannedBlocks = new BannedContentDialog<>("@bannedblocks", ContentType.block, b -> !b.name.startsWith("tmp-"));
+    private RevealedContentDialog<Block> revealedBlocks = new RevealedContentDialog<>("@revealedblocks", ContentType.block, b -> !b.name.startsWith("tmp-"));
+    private BannedContentDialog<UnitType> bannedUnits = new BannedContentDialog<>("@bannedunits", ContentType.unit, u -> true);
+    private EnvDialog envDialog = new EnvDialog();
     private Table main;
     private RulesWrite writeRoot;
 
@@ -41,6 +49,10 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         }
 
         shown(this::setup);
+
+        Reflect.set(CustomRulesDialog.class, this, "loadoutDialog", null);
+        Reflect.set(CustomRulesDialog.class, this, "bannedBlocks", null);
+        Reflect.set(CustomRulesDialog.class, this, "bannedUnits", null);
     }
 
     public static void inject() {
@@ -64,7 +76,8 @@ public class OCustomRulesDialog extends CustomRulesDialog {
                 build();
             }).padLeft(10f).size(35f);
         }).fillX().row();
-        Cell<ScrollPane> paneCell = cont.pane(m -> main = m);
+        cont.add(new Table()).width(520f).row();
+        Cell<ScrollPane> paneCell = cont.pane(m -> main = m).fillX();
         writeRoot = new RulesWrite(main, "");
 
         build();
@@ -74,23 +87,87 @@ public class OCustomRulesDialog extends CustomRulesDialog {
 
     void build() {
         writeRoot.clear(ruleSearch);
-        main.table().minWidth(500f).maxWidth(500f).width(500f).row();
+        main.add(new Table()).width(500f).row();
         RulesWrite write;
 
         final Rules rules = Vars.state.rules;
 
         write = writeRoot.category("waves");
-        write.w("rules.waves", () -> rules.waves, b -> rules.waves = b);
-        write.w("rules.wavesending", () -> rules.waveSending, b -> rules.waveSending = b).enabled(() -> rules.waves);
-        write.w("rules.wavetimer", () -> rules.waveTimer, b -> rules.waveTimer = b).enabled(() -> rules.waves);
-        write.w("rules.waitForWaveToEnd", () -> rules.waitEnemies, b -> rules.waitEnemies = b).enabled(() -> rules.waves && rules.waveTimer);
-        write.w("rules.randomwaveai", () -> rules.randomWaveAI, b -> rules.randomWaveAI = b).enabled(() -> rules.waves);
-        write.w("rules.wavespawnatcores", () -> rules.wavesSpawnAtCores, b -> rules.wavesSpawnAtCores = b).enabled(() -> rules.waves);
-        write.w("rules.airUseSpawns", () -> rules.airUseSpawns, b -> rules.airUseSpawns = b).enabled(() -> rules.waves);
+        write.b("rules.waves", () -> rules.waves, b -> rules.waves = b);
+        write.b("rules.wavesending", () -> rules.waveSending, b -> rules.waveSending = b).enabled(() -> rules.waves);
+        write.b("rules.wavetimer", () -> rules.waveTimer, b -> rules.waveTimer = b).enabled(() -> rules.waves);
+        write.b("rules.waitForWaveToEnd", () -> rules.waitEnemies, b -> rules.waitEnemies = b).enabled(() -> rules.waves && rules.waveTimer);
+        write.b("rules.randomwaveai", () -> rules.randomWaveAI, b -> rules.randomWaveAI = b).enabled(() -> rules.waves);
+        write.b("rules.wavespawnatcores", () -> rules.wavesSpawnAtCores, b -> rules.wavesSpawnAtCores = b).enabled(() -> rules.waves);
+        write.b("rules.airUseSpawns", () -> rules.airUseSpawns, b -> rules.airUseSpawns = b).enabled(() -> rules.waves);
         write.i("rules.wavelimit", () -> rules.winWave, i -> rules.winWave = i).min(0).enabled(() -> rules.waves);
         write.f("rules.wavespacing", () -> rules.waveSpacing / 60, f -> rules.waveSpacing = f * 60).min(0).enabled(() -> rules.waves && rules.waveTimer);
         write.f("rules.initialwavespacing", () -> rules.initialWaveSpacing / 60, f -> rules.initialWaveSpacing = f * 60).min(1).enabled(() -> rules.waves && rules.waveTimer);
         write.f("rules.dropzoneradius", () -> rules.dropZoneRadius / Vars.tilesize, f -> rules.dropZoneRadius = f * Vars.tilesize).min(0).enabled(() -> rules.waves);
+
+        write = writeRoot.category("resourcesbuilding");
+        write.b("rules.alloweditworldprocessors", () -> rules.allowEditWorldProcessors, b -> rules.allowEditWorldProcessors = b);
+        write.b("rules.infiniteresources", () -> rules.infiniteResources, b -> rules.infiniteResources = b);
+        write.b("rules.onlydepositcore", () -> rules.onlyDepositCore, b -> rules.onlyDepositCore = b);
+        write.b("rules.derelictrepair", () -> rules.derelictRepair, b -> rules.derelictRepair = b);
+        write.b("rules.reactorexplosions", () -> rules.reactorExplosions, b -> rules.reactorExplosions = b);
+        write.b("rules.schematic", () -> rules.schematicsAllowed, b -> rules.schematicsAllowed = b);
+        write.b("rules.coreincinerates", () -> rules.coreIncinerates, b -> rules.coreIncinerates = b);
+        write.b("rules.cleanupdeadteams", () -> rules.cleanupDeadTeams, b -> rules.cleanupDeadTeams = b).enabled(() -> rules.pvp);
+        write.b("rules.disableworldprocessors", () -> rules.disableWorldProcessors, b -> rules.disableWorldProcessors = b);
+        write.f("rules.buildcostmultiplier", () -> rules.buildCostMultiplier, f -> rules.buildCostMultiplier = f).enabled(() -> !rules.infiniteResources);
+        write.f("rules.buildspeedmultiplier", () -> rules.buildSpeedMultiplier, f -> rules.buildSpeedMultiplier = f).range(0.001f, 50f);
+        write.f("rules.deconstructrefundmultiplier", () -> rules.deconstructRefundMultiplier, f -> rules.deconstructRefundMultiplier = f).range(0f, 1f).enabled(() -> !rules.infiniteResources);
+        write.f("rules.blockhealthmultiplier", () -> rules.blockHealthMultiplier, f -> rules.blockHealthMultiplier = f);
+        write.f("rules.blockdamagemultiplier", () -> rules.blockDamageMultiplier, f -> rules.blockDamageMultiplier = f);
+        write.loadout("configure", 999999, () -> rules.loadout, xx -> true,
+                () -> rules.loadout.clear().add(new ItemStack(Items.copper, 100)), () -> {
+                }, () -> {
+                });
+        write.button("bannedblocks", () -> bannedBlocks.show(rules.bannedBlocks));
+        write.b("rules.hidebannedblocks", () -> rules.hideBannedBlocks, b -> rules.hideBannedBlocks = b);
+        write.b("bannedblocks.whitelist", () -> rules.blockWhitelist, b -> rules.blockWhitelist = b);
+        write.button("revealedblocks", () -> revealedBlocks.show(rules.revealedBlocks));
+
+        write = writeRoot.category("unit");
+
+        write.b("rules.unitcapvariable", () -> rules.unitCapVariable, b -> rules.unitCapVariable = b);
+        write.b("rules.unitpayloadsexplode", () -> rules.unitPayloadsExplode, b -> rules.unitPayloadsExplode = b);
+        write.i("rules.unitcap", () -> rules.unitCap, b -> rules.unitCap = b).range(-999, 999);
+        write.f("rules.unitdamagemultiplier", () -> rules.unitDamageMultiplier, f -> rules.unitDamageMultiplier = f);
+        write.f("rules.unitcrashdamagemultiplier", () -> rules.unitCrashDamageMultiplier, f -> rules.unitCrashDamageMultiplier = f);
+        write.f("rules.unitminespeedmultiplier", () -> rules.unitMineSpeedMultiplier, f -> rules.unitMineSpeedMultiplier = f);
+        write.f("rules.unitbuildspeedmultiplier", () -> rules.unitBuildSpeedMultiplier, f -> rules.unitBuildSpeedMultiplier = f);
+        write.f("rules.unitcostmultiplier", () -> rules.unitCostMultiplier, f -> rules.unitCostMultiplier = f);
+        write.f("rules.unithealthmultiplier", () -> rules.unitHealthMultiplier, f -> rules.unitHealthMultiplier = f);
+        write.button("bannedunits", () -> bannedUnits.show(rules.bannedUnits));
+        write.b("bannedunits.whitelist", () -> rules.unitWhitelist, b -> rules.unitWhitelist = b);
+
+        write = writeRoot.category("enemy");
+
+        write.b("rules.attack", () -> rules.attackMode, b -> rules.attackMode = b);
+        write.b("rules.corecapture", () -> rules.coreCapture, b -> rules.coreCapture = b);
+        write.b("rules.placerangecheck", () -> rules.placeRangeCheck, b -> rules.placeRangeCheck = b);
+        write.b("rules.polygoncoreprotection", () -> rules.polygonCoreProtection, b -> rules.polygonCoreProtection = b);
+        write.f("rules.enemycorebuildradius", () -> rules.enemyCoreBuildRadius / Vars.tilesize, f -> rules.enemyCoreBuildRadius = f * Vars.tilesize).enabled(() -> !rules.polygonCoreProtection);
+
+        write = writeRoot.category("environment");
+
+        write.b("rules.explosions", () -> rules.damageExplosions, b -> rules.damageExplosions = b);
+        write.b("rules.fire", () -> rules.fire, b -> rules.fire = b);
+        write.b("rules.fog", () -> rules.fog, b -> rules.fog = b);
+        write.b("rules.lighting", () -> rules.lighting, b -> rules.lighting = b);
+        write.spacer();
+
+        write.b("rules.limitarea", () -> rules.limitMapArea, b -> rules.limitMapArea = b).enabled(() -> !Vars.state.isGame());
+        write.i("rules.limitarea", () -> rules.limitX, i -> rules.limitX = i).label("x").range(0, 10000).enabled(() -> !Vars.state.isGame());
+        write.i("rules.limitarea", () -> rules.limitY, i -> rules.limitY = i).label("y").range(0, 10000).enabled(() -> !Vars.state.isGame());
+        write.i("rules.limitarea", () -> rules.limitWidth, i -> rules.limitWidth = i).label("w").range(0, 10000).enabled(() -> !Vars.state.isGame());
+        write.i("rules.limitarea", () -> rules.limitHeight, i -> rules.limitHeight = i).label("h").range(0, 10000).enabled(() -> !Vars.state.isGame());
+        write.spacer();
+
+        write.f("rules.solarmultiplier", () -> rules.solarMultiplier, f -> rules.solarMultiplier = f);
+        write.button("rules.env", () -> envDialog.show());
 
         write = writeRoot.category("mindurka");
         {
@@ -117,188 +194,5 @@ public class OCustomRulesDialog extends CustomRulesDialog {
                 extra[0].run();
             }
         }
-
-        // category("mindurka");
-
-        // if (Core.bundle.get("rules.title.mindurka").toLowerCase().contains(ruleSearch)) {
-        //     current.table(Tex.button, t -> {
-        //         t.margin(10f);
-        //         ButtonGroup<?> group = new ButtonGroup<>();
-        //         TextButton.TextButtonStyle style = Styles.flatTogglet;
-
-        //         t.defaults().size(140f, 50f);
-
-        //         for (String gamemodeName : Gamemode.keys()) {
-        //             Gamemode.Factory gamemode = Gamemode.forName(gamemodeName);
-        //             if (gamemode == Gamemode.UNKNOWN) continue;
-
-        //             t.button(Core.bundle.get("mindurka.gamemode." + gamemode.name()), style, () -> {
-        //                 MVars.rules.gamemode(gamemode);
-        //                 updateExtraRules();
-        //             }).group(group).checked(b -> MVars.rules.ga);
-
-        //             if (t.getChildren().size % 3 == 0) {
-        //                 t.row();
-        //             }
-        //         }
-
-        //         t.button("@mindurka.gamemode.unknown", style, () -> {
-        //             MVars.rules.gamemode = MRules.Gamemode.unknown;
-        //             MVars.rules.gamemode.save();
-        //             MVars.rules.gamemode.assign(Vars.state.rules);
-        //             updateExtraRules();
-        //         }).group(group).checked(b -> MVars.rules.gamemode == MRules.Gamemode.unknown);
-        //     }).left().fill(false).expand(false, false).row();
-        // }
-
-        // current.table(t -> gamemodeRules = t).padTop(0).expandX();
-        // updateExtraRules();
-
-        // addToMain(current, Core.bundle.get("rules.title.mindurka"));
     }
-
-    // void updateExtraRules() {
-    //     gamemodeRules.clear();
-    //     gamemodeRules.left().defaults().fillX().left();
-    //     gamemodeRules.row();
-
-    //     Table prevCurrent = current;
-    //     current = gamemodeRules;
-
-    //     if (MVars.rules.gamemode == MRules.Gamemode.forts) {
-    //         check("@rules.mindurka.impactReactorEnabled", b -> {
-    //             MVars.rules.impactReactorEnabled = b;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.impactReactorEnabled);
-    //         number("@rules.mindurka.impactReactorShieldDuration", f -> {
-    //             MVars.rules.impactReactorShieldDuration = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.impactReactorShieldDuration, () -> MVars.rules.impactReactorEnabled);
-    //         number("@rules.mindurka.impactReactorCooldown", f -> {
-    //             MVars.rules.impactReactorCooldown = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.impactReactorCooldown, () -> MVars.rules.impactReactorEnabled);
-    //         number("@rules.mindurka.impactReactorDelay", f -> {
-    //             MVars.rules.impactReactorDelay = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.impactReactorDelay, () -> MVars.rules.impactReactorEnabled);
-
-    //         if (current.hasChildren()) {
-    //             current.table(t -> {
-    //                 t.setHeight(4f);
-    //                 t.left();
-    //             }).padTop(0);
-    //             current.row();
-    //         }
-
-    //         check("@rules.mindurka.thorReactorEnabled", b -> {
-    //             MVars.rules.thorReactorEnabled = b;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.thorReactorEnabled);
-    //         number("@rules.mindurka.thorReactorPowerMultiplier", f -> {
-    //             MVars.rules.thorReactorPowerMultiplier = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.thorReactorPowerMultiplier, () -> MVars.rules.thorReactorEnabled);
-    //         number("@rules.mindurka.thorReactorCooldown", f -> {
-    //             MVars.rules.thorReactorCooldown = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.thorReactorCooldown, () -> MVars.rules.thorReactorEnabled);
-    //         number("@rules.mindurka.thorReactorDelay", f -> {
-    //             MVars.rules.thorReactorDelay = f;
-    //             MVars.rules.save();
-    //         }, () -> MVars.rules.thorReactorDelay, () -> MVars.rules.thorReactorEnabled);
-
-    //         FortsTeamsWidget.create(current, Vars.state.rules, MVars.rules);
-
-    //         if (Core.bundle.get("editor.mindurka.fortsPlotKind").toLowerCase().contains(ruleSearch)) {
-    //             current.table(Tex.button, t -> {
-    //                 t.margin(10f);
-    //                 ButtonGroup<?> group = new ButtonGroup<>();
-    //                 TextButton.TextButtonStyle style = Styles.flatTogglet;
-
-    //                 t.defaults().size(140f, 50f);
-
-    //                 for (MRules.FortsPlotKind kind : MRules.FortsPlotKind.values()) {
-    //                     t.button(Core.bundle.get("rules.mindurka.fortsPlotKind." + kind.name()), style, () -> {
-    //                         MVars.rules.fortsPlotKind = kind;
-    //                         MVars.rules.fortsPlotKind.reset(MVars.rules);
-    //                         MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //                         updateFortsPlotProps();
-    //                     }).group(group).checked(b -> MVars.rules.fortsPlotKind == kind);
-
-    //                     if (t.getChildren().size % 3 == 0) {
-    //                         t.row();
-    //                     }
-    //                 }
-    //             }).left().fill(false).expand(false, false).row();
-    //         }
-
-    //         current.table(t -> fortsPlotProps = t).padTop(0).expandX();
-    //         updateFortsPlotProps();
-    //     }
-
-    //     MVars.editorDialog.refreshTools();
-    //     current = prevCurrent;
-    // }
-
-    // void updateFortsPlotProps() {
-    //     fortsPlotProps.clear();
-    //     fortsPlotProps.left().defaults().fillX().left();
-    //     fortsPlotProps.row();
-
-    //     Table prevCurrent = current;
-    //     current = fortsPlotProps;
-
-    //     if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.square) {
-    //         numberi("@rules.mindurka.fortsPlotKind.square.size", i -> {
-    //             MVars.rules.fortsPlotParam1i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam1i, 1, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.square.wall", i -> {
-    //             MVars.rules.fortsPlotParam3i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam3i, 0, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.square.shiftX", i -> {
-    //             MVars.rules.fortsPlotParam4i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam4i, 0, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.square.shiftY", i -> {
-    //             MVars.rules.fortsPlotParam5i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam5i, 0, 16);
-    //     }
-
-    //     if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect) {
-    //         numberi("@rules.mindurka.fortsPlotKind.rect.width", i -> {
-    //             MVars.rules.fortsPlotParam1i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam1i, 1, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.rect.height", i -> {
-    //             MVars.rules.fortsPlotParam2i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam2i, 1, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.rect.wall", i -> {
-    //             MVars.rules.fortsPlotParam3i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam3i, 0, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.rect.shiftX", i -> {
-    //             MVars.rules.fortsPlotParam4i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam4i, 0, 16);
-    //         numberi("@rules.mindurka.fortsPlotKind.rect.shiftY", i -> {
-    //             MVars.rules.fortsPlotParam5i = i;
-    //             MVars.rules.fortsPlotKind.save(Vars.state.rules, MVars.rules);
-    //         }, () -> MVars.rules.fortsPlotParam5i, 0, 16);
-    //     }
-
-    //     current = prevCurrent;
-    // }
-
-    // void addToMain(Table category, String title) {
-    //     if (category.hasChildren()) {
-    //         main.add(title).color(Pal.accent).padTop(20).padRight(100f).padBottom(-3).fillX().left().pad(5).row();
-    //         main.image().color(Pal.accent).height(3f).padRight(100f).padBottom(20).fillX().left().pad(5).row();
-    //         main.add(category).row();
-    //     }
-    // }
 }

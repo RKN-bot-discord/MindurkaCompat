@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.Core;
 import arc.util.Log;
 import arc.util.Nullable;
 import mindurka.MVars;
@@ -83,6 +84,7 @@ public class MRules {
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(PATCH, PATCH_VER);
+            if (!Core.input.shift()) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
         return this;

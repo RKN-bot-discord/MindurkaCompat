@@ -99,10 +99,6 @@ public abstract class MouseAction {
 
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     static class Drag extends MouseAction {
-        // TODO: Handle 2 pointers.
-        //       For the second pointer, I think if the first one gets release,
-        //       we can just reassign the second one to the first one.
-        //       We'll see ig.
         private float mouseX;
         private float mouseY;
 

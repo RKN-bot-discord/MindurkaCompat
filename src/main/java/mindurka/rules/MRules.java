@@ -23,8 +23,9 @@ public class MRules {
     public static final String PATCH = PREFIX+".patch";
     public static final String FORMAT_VER = "1";
     public static final String PATCH_VER = "1";
-    public static final String GAMEMODE = "mindurkaGamemode"; // Does not use `mdrk.*` convention as it's a legacy key.
-                                                              // But it's a great legacy, so we depend on it.
+    public static final String GAMEMODE = PREFIX+".gamemode";
+    public static final String GAMEMODE_LEGACY = "mindurkaGamemode"; // Does not use `mdrk.*` convention as it's a legacy key.
+                                                                     // But it's a great legacy, so we depend on it.
 
     private final Rules rules;
     private final Map map;
@@ -50,6 +51,10 @@ public class MRules {
         {
             @Nullable String gamemodeName = rules.tags.get(GAMEMODE);
             if (gamemodeName == null) {
+                gamemodeName = rules.tags.get(GAMEMODE_LEGACY);
+                rules.tags.put(GAMEMODE, gamemodeName);
+            }
+            if (gamemodeName == null) {
                 Vars.ui.showErrorMessage("MindurkaCompat: Format version 1 requires gamemode to be specified.");
                 return;
             }
@@ -65,6 +70,7 @@ public class MRules {
     private void remove() {
         rules.tags.remove(FORMAT);
         rules.tags.remove(GAMEMODE);
+        rules.tags.remove(GAMEMODE_LEGACY);
         rules.tags.remove(PATCH);
 
         if (gamemode != null) {
@@ -83,6 +89,7 @@ public class MRules {
             gamemode = newValue.create(this, rules, map);
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
+            rules.tags.put(GAMEMODE_LEGACY, newValue.name());
             rules.tags.put(PATCH, PATCH_VER);
             if (!Core.input.shift()) gamemode.setRules();
         }

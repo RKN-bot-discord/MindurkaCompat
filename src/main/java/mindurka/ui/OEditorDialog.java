@@ -158,7 +158,6 @@ public class OEditorDialog extends MapEditorDialog {
         reloadMap = false;
         show();
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
-        Vars.state.rules = new Rules();
         lastSavedRules = null;
         // saved = false;
         Reflect.invoke(EditorRenderer.class, editor.renderer, "recache", Util.noargs);

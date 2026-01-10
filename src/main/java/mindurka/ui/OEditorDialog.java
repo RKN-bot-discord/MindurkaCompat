@@ -175,6 +175,7 @@ public class OEditorDialog extends MapEditorDialog {
             Vars.state.rules.limitMapArea = false;
             Vars.state.rules.sector = null;
             Vars.state.rules.fog = false;
+            Vars.state.rules.schematicsAllowed = true;
             Vars.state.map = new Map(StringMap.of(
                     "name", "Editor Playtesting",
                     "width", editor.width(),

@@ -5,21 +5,29 @@ import arc.func.Boolc;
 import arc.func.Boolf;
 import arc.func.Boolp;
 import arc.func.Cons;
+import arc.func.Cons2;
 import arc.func.Floatc;
 import arc.func.Floatp;
+import arc.func.Func2;
 import arc.func.Intc;
 import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
+import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.ButtonGroup;
 import arc.scene.ui.CheckBox;
+import arc.scene.ui.Image;
 import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
+import arc.struct.OrderedMap;
 import arc.struct.Seq;
 import arc.util.Nullable;
 import arc.util.Strings;
+import mindustry.Vars;
+import mindustry.game.Team;
+import mindustry.gen.Icon;
 import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
@@ -110,14 +118,16 @@ public class RulesWrite {
             addItem.get(new AddItem<T>() {
                 @Override
                 public void add(String tlKey, T value) {
-                    TextButton[] button = new TextButton[1];
+                    @SuppressWarnings("unchecked")
+                    Cell<TextButton>[] button = new Cell[1]; // Java
                     button[0] = t.button(Core.bundle.get(tlKey), style, () -> {
                         buttons.each(x -> x.setChecked(false));
-                        button[0].setChecked(true);
+                        button[0].get().setChecked(true);
                         onClick.get(value);
-                    }).group(group).get();
-                    button[0].setChecked(value == null ? def == null : value.equals(def));
-                    buttons.add(button[0]);
+                    }).group(group);
+                    button[0].get().setChecked(value == null ? def == null : value.equals(def));
+                    if (buttons.size % 3 == 2) button[0].row();
+                    buttons.add(button[0].get());
                 }
             });
         }).left().pad(6).fill(false).expand(false, false).row();
@@ -212,7 +222,7 @@ public class RulesWrite {
                     }).marginTop(0).marginBottom(0)
                     .valid(f -> Strings.parseInt(f) >= ctl.min && Strings.parseInt(f) <= ctl.max).width(120f).left();
         }).padTop(0);
-        cell.pad(6).padTop(0).get().left().row();
+        cell.pad(6).get().left().row();
         root.row();
 
         return ctl;
@@ -290,17 +300,76 @@ public class RulesWrite {
                 resetter, updater, hider));
     }
 
+    public void color(String tlKey, Prov<Color> def, Cons<Color> onClick) {
+        if (!shouldAdd(tlKey)) return;
+
+        root.button(b -> {
+            b.left();
+            b.table(Tex.pane, in -> in.stack(new Image(Tex.alphaBg), new Image(Tex.whiteui) {{
+                update(() -> setColor(def.get()));
+            }}).grow()).margin(4).size(50).padRight(10);
+            b.add("@"+tlKey);
+        }, () -> Vars.ui.picker.show(def.get(), onClick)).left().width(300f).padLeft(6).row();
+    }
+
     public void button(String tlKey, Runnable click) {
         if (!shouldAdd(tlKey)) return;
 
-        root.button("@" + tlKey, click).left().width(300f).row();
+        root.button("@" + tlKey, click).left().width(300f).padLeft(6).row();
+    }
+
+    public void teams(String tlKey, Cons2<Team, RulesWrite> sectionConf, Boolf<Team> enabled) {
+        if (!shouldAdd(tlKey)) return;
+
+        final Table table = new Table();
+        root.add(table).fillX().row();
+
+        class TeamData {
+            boolean shown;
+            final Table container = new Table();
+
+            TextureRegionDrawable buttonIcon() { return shown ? Icon.downOpen : Icon.upOpen; }
+
+            TeamData(final Team team) { this(team, false); }
+            TeamData(final Team team, final boolean shown) {
+                this.shown = shown;
+
+                container.button(team.coloredName(), Icon.downOpen, Styles.togglet, () -> this.shown = !this.shown)
+                    .marginLeft(14).width(260).height(55).update(t -> {
+                        ((Image) t.getChildren().get(1)).setDrawable(buttonIcon());
+                        t.setChecked(this.shown);
+                    }).left().padBottom(2).row();
+                container.collapser(c -> {
+                    c.defaults().left();
+                    RulesWrite write = new RulesWrite(c, filter);
+                    write.parent = RulesWrite.this;
+                    sectionConf.get(team, write);
+                }, () -> this.shown).left().fillX().row();
+                table.add(container).fillX().padLeft(6).row();
+            }
+
+            void remove() {
+                table.removeChild(container);
+            }
+        }
+
+        final OrderedMap<Team, TeamData> dataList = new OrderedMap<>();
+
+        for (Team team : Team.baseTeams) {
+            dataList.put(team, new TeamData(team));
+        }
+        for (Team team : Team.all) {
+            if (!enabled.get(team)) continue;
+            if (dataList.containsKey(team)) continue;
+            dataList.put(team, new TeamData(team));
+        }
     }
 
     public void spacer() {
         if (!canPlaceSpacer) return;
         canPlaceSpacer = false;
 
-        root.table().fillX().height(8f).minHeight(8f).maxHeight(8f);
+        root.table().fillX().height(16f).minHeight(16f).maxHeight(16f);
         root.row();
     }
 

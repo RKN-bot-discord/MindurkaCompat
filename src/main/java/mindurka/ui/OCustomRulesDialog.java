@@ -11,9 +11,11 @@ import arc.struct.Seq;
 import arc.util.Nullable;
 import arc.util.Reflect;
 import mindurka.MVars;
+import mindurka.Util;
 import mindurka.rules.Gamemode;
 import mindustry.Vars;
 import mindustry.content.Items;
+import mindustry.content.Planets;
 import mindustry.ctype.ContentType;
 import mindustry.editor.BannedContentDialog;
 import mindustry.editor.MapEditorDialog;
@@ -21,6 +23,7 @@ import mindustry.editor.MapInfoDialog;
 import mindustry.game.Rules;
 import mindustry.gen.Icon;
 import mindustry.type.ItemStack;
+import mindustry.type.Planet;
 import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.CustomRulesDialog;
@@ -131,6 +134,8 @@ public class OCustomRulesDialog extends CustomRulesDialog {
 
         write = writeRoot.category("unit");
 
+        write.b("rules.instantbuild", () -> rules.instantBuild, b -> rules.instantBuild = b);
+        write.b("rules.possessionallowed", () -> rules.possessionAllowed, b -> rules.possessionAllowed = b);
         write.b("rules.unitcapvariable", () -> rules.unitCapVariable, b -> rules.unitCapVariable = b);
         write.b("rules.unitpayloadsexplode", () -> rules.unitPayloadsExplode, b -> rules.unitPayloadsExplode = b);
         write.i("rules.unitcap", () -> rules.unitCap, b -> rules.unitCap = b).range(-999, 999);
@@ -140,6 +145,7 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         write.f("rules.unitbuildspeedmultiplier", () -> rules.unitBuildSpeedMultiplier, f -> rules.unitBuildSpeedMultiplier = f);
         write.f("rules.unitcostmultiplier", () -> rules.unitCostMultiplier, f -> rules.unitCostMultiplier = f);
         write.f("rules.unithealthmultiplier", () -> rules.unitHealthMultiplier, f -> rules.unitHealthMultiplier = f);
+        write.b("rules.unitammo", () -> rules.unitAmmo, b -> rules.unitAmmo = b);
         write.button("bannedunits", () -> bannedUnits.show(rules.bannedUnits));
         write.b("bannedunits.whitelist", () -> rules.unitWhitelist, b -> rules.unitWhitelist = b);
 
@@ -156,6 +162,7 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         write.b("rules.explosions", () -> rules.damageExplosions, b -> rules.damageExplosions = b);
         write.b("rules.fire", () -> rules.fire, b -> rules.fire = b);
         write.b("rules.fog", () -> rules.fog, b -> rules.fog = b);
+        write.b("rules.staticfog", () -> rules.staticFog, b -> rules.staticFog = b);
         write.b("rules.lighting", () -> rules.lighting, b -> rules.lighting = b);
         write.spacer();
 
@@ -164,10 +171,71 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         write.i("rules.limitarea", () -> rules.limitY, i -> rules.limitY = i).label("y").range(0, 10000).enabled(() -> !Vars.state.isGame());
         write.i("rules.limitarea", () -> rules.limitWidth, i -> rules.limitWidth = i).label("w").range(0, 10000).enabled(() -> !Vars.state.isGame());
         write.i("rules.limitarea", () -> rules.limitHeight, i -> rules.limitHeight = i).label("h").range(0, 10000).enabled(() -> !Vars.state.isGame());
+        write.b("rules.borderdarkness", () -> rules.borderDarkness, b -> rules.borderDarkness = b);
         write.spacer();
 
         write.f("rules.solarmultiplier", () -> rules.solarMultiplier, f -> rules.solarMultiplier = f);
+        write.color("rules.ambientlight", () -> rules.ambientLight, rules.ambientLight::set);
+        write.color("rules.cloudcolor", () -> rules.cloudColor, rules.cloudColor::set);
+        write.spacer();
+
         write.button("rules.env", () -> envDialog.show());
+        write.button("rules.weather", () -> Reflect.invoke(CustomRulesDialog.class, this, "weatherDialog", Util.noargs));
+
+        write = writeRoot.category("planet");
+        write.selection("rules.title.planet", addItem -> {
+            for (Planet planet : Vars.content.planets()) {
+                if (planet == Planets.sun) continue;
+                addItem.add("planet."+planet.name+".name", planet);
+            }
+            addItem.add("rules.anyenv", Planets.sun);
+        }, value -> {
+            if (value == Planets.sun) {
+                rules.env = Vars.defaultEnv;
+            }
+            rules.planet = value;
+            if (!Core.input.shift()) value.applyRules(rules, true);
+        }, rules.planet);
+
+        write = writeRoot.category("teams");
+        if (showRuleEditRule)
+            write.b("rules.allowedit", () -> rules.allowEditRules, b -> rules.allowEditRules = b);
+        write.teams("teams", (team, wteam) -> {
+            Rules.TeamRule teams = rules.teams.get(team);
+
+            wteam.f("rules.blockhealthmultiplier", () -> teams.blockHealthMultiplier, f -> teams.blockHealthMultiplier = f);
+            wteam.f("rules.blockdamagemultiplier", () -> teams.blockDamageMultiplier, f -> teams.blockDamageMultiplier = f);
+            wteam.spacer();
+
+            wteam.b("rules.infiniteammo", () -> teams.infiniteAmmo, b -> teams.infiniteAmmo = b);
+            wteam.b("rules.cheat", () -> teams.cheat, b -> teams.cheat = b);
+            wteam.b("rules.fillitems", () -> teams.fillItems, b -> teams.fillItems = b);
+            wteam.spacer();
+
+            wteam.b("rules.rtsai", () -> teams.rtsAi, b -> teams.rtsAi = b).enabled(() -> team != rules.defaultTeam);
+            wteam.i("rules.rtsminsquadsize", () -> teams.rtsMinSquad, i -> teams.rtsMinSquad = i).range(0, 1000).enabled(() -> team != rules.defaultTeam && teams.rtsAi);
+            wteam.i("rules.rtsmaxsquadsize", () -> teams.rtsMaxSquad, i -> teams.rtsMaxSquad = i).range(1, 1000).enabled(() -> team != rules.defaultTeam && teams.rtsAi);
+            wteam.f("rules.rtsminattackweight", () -> teams.rtsMinWeight, f -> teams.rtsMinWeight = f).enabled(() -> team != rules.defaultTeam && teams.rtsAi);
+            wteam.spacer();
+
+            // Have fun, erekir gamers!
+            wteam.b("rules.buildai", () -> teams.buildAi, b -> teams.buildAi = b);
+            wteam.f("rules.buildaitier", () -> teams.buildAiTier, f -> teams.buildAiTier = f).enabled(() -> teams.buildAi);
+            wteam.b("rules.prebuildai", () -> teams.prebuildAi, b -> teams.prebuildAi = b);
+            wteam.spacer();
+
+            wteam.f("rules.extracorebuildradius", () -> teams.extraCoreBuildRadius / Vars.tilesize, f -> teams.extraCoreBuildRadius = f * Vars.tilesize).enabled(() -> !rules.polygonCoreProtection);
+            wteam.b("rules.infiniteresources", () -> teams.infiniteResources, b -> teams.infiniteResources = b);
+            wteam.f("rules.buildspeedmultiplier", () -> teams.buildSpeedMultiplier, f -> teams.buildSpeedMultiplier = f).min(0.001f);
+            wteam.spacer();
+
+            wteam.f("rules.unitdamagemultiplier", () -> teams.unitDamageMultiplier, f -> teams.unitDamageMultiplier = f);
+            wteam.f("rules.unitcrashdamagemultiplier", () -> teams.unitCrashDamageMultiplier, f -> teams.unitCrashDamageMultiplier = f);
+            wteam.f("rules.unitminespeedmultiplier", () -> teams.unitMineSpeedMultiplier, f -> teams.unitMineSpeedMultiplier = f);
+            wteam.f("rules.unitbuildspeedmultiplier", () -> teams.unitBuildSpeedMultiplier, f -> teams.unitBuildSpeedMultiplier = f);
+            wteam.f("rules.unitcostmultiplier", () -> teams.unitCostMultiplier, f -> teams.unitCostMultiplier = f);
+            wteam.f("rules.unithealthmultiplier", () -> teams.unitHealthMultiplier, f -> teams.unitHealthMultiplier = f);
+        }, team -> team.data().cores.size != 0);
 
         write = writeRoot.category("mindurka");
         {
@@ -194,5 +262,13 @@ public class OCustomRulesDialog extends CustomRulesDialog {
                 extra[0].run();
             }
         }
+
+        write = writeRoot.category("advanced");
+        write.b("rules.cangameover", () -> rules.canGameOver, b -> rules.canGameOver = b);
+        write.b("rules.editor", () -> rules.editor, b -> rules.editor = b);
+        write.b("rules.alloweditrules", () -> rules.allowEditRules, b -> rules.allowEditRules = b);
+        write.b("rules.alloweditworldprocessors", () -> rules.allowEditWorldProcessors, b -> rules.allowEditWorldProcessors = b);
+        write.b("rules.allowenvironmentdeconstruct", () -> rules.allowEnvironmentDeconstruct, b -> rules.allowEnvironmentDeconstruct = b);
+        write.b("rules.allowlogicdata", () -> rules.allowLogicData, b -> rules.allowLogicData = b);
     }
 }

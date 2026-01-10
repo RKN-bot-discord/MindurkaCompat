@@ -1,5 +1,6 @@
 package mindurka.ui;
 
+import arc.input.KeyCode;
 import arc.scene.ui.Dialog;
 import arc.scene.ui.layout.Table;
 import mindustry.Vars;
@@ -28,6 +29,8 @@ public class EnvDialog extends Dialog {
         check("@rules.env.oxygen", Env.oxygen);
 
         cont.button("@close", this::hide).padTop(30f).width(300f).row();
+
+        keyDown(KeyCode.escape, this::hide);
     }
 
     void check(String text, int env) {

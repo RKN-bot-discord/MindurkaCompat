@@ -4,9 +4,10 @@ import arc.input.KeyCode;
 import arc.math.Mathf;
 import arc.struct.LongSeq;
 import arc.util.Nullable;
-import mindurka.MRules;
 import mindurka.MVars;
 import mindurka.Util;
+import mindurka.rules.Gamemode;
+import mindurka.rules.Gamemodes;
 import mindustry.world.Block;
 
 public enum EditorTool {
@@ -155,13 +156,13 @@ public enum EditorTool {
     // Forts tools.
     fortsPlotCarver(KeyCode.q) {
         {
-            lockedBehind = MRules.Gamemode.forts;
+            lockedBehind = Gamemodes.forts;
             blockTool = false;
         }
     },
     fortsPlotToggle(KeyCode.w) {
         {
-            lockedBehind = MRules.Gamemode.forts;
+            lockedBehind = Gamemodes.forts;
             blockTool = false;
         }
     },
@@ -192,7 +193,7 @@ public enum EditorTool {
     public boolean blockTool = true;
     private final KeyCode defaultKey;
     public Drag draggable = Drag.Touch;
-    public @Nullable MRules.Gamemode lockedBehind = null;
+    public @Nullable Gamemode lockedBehind = null;
 
     public KeyCode key() {
         return defaultKey;

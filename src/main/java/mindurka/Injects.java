@@ -1,5 +1,7 @@
 package mindurka;
 
+import mindurka.rules.FortsPlotKind;
+import mindurka.rules.Gamemode;
 import mindurka.ui.OCustomRulesDialog;
 import mindurka.ui.OEditorDialog;
 import mindurka.ui.OMapEditor;
@@ -22,7 +24,8 @@ public class Injects {
             };
         });
 
-        // I have no idea what any of this does, but hopefully it works.
+        Gamemode.init();
+        FortsPlotKind.init();
 
         MVars.oldMapView = Vars.ui.editor.getView();
 

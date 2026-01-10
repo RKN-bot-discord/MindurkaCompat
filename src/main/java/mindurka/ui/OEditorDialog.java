@@ -29,9 +29,10 @@ import arc.util.Reflect;
 import arc.util.Strings;
 import arc.util.Structs;
 import arc.util.Time;
-import mindurka.MRules;
 import mindurka.MVars;
 import mindurka.Util;
+import mindurka.rules.Gamemodes;
+import mindurka.rules.MRules;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.UnitTypes;
@@ -122,7 +123,7 @@ public class OEditorDialog extends MapEditorDialog {
                 editor.OBeginEdit(200, 200);
             }
             MVars.toolOptions.reset();
-            MVars.rules.sync();
+            MVars.rules = new MRules(Vars.state.rules, Vars.state.map);
             shownWithMap = false;
         });
 
@@ -318,9 +319,11 @@ public class OEditorDialog extends MapEditorDialog {
 
                     undo.setDisabled(() -> !editor.canUndo());
                     redo.setDisabled(() -> !editor.canRedo());
+                    undo.getImage().setColor(editor.canUndo() ? Color.white : Color.gray);
+                    redo.getImage().setColor(editor.canRedo() ? Color.white : Color.gray);
 
-                    undo.update(() -> undo.getImage().setColor(undo.isDisabled() ? Color.gray : Color.white));
-                    redo.update(() -> redo.getImage().setColor(redo.isDisabled() ? Color.gray : Color.white));
+                    undo.update(() -> undo.getImage().setColor(editor.canUndo() ? Color.white : Color.gray));
+                    redo.update(() -> redo.getImage().setColor(editor.canRedo() ? Color.white : Color.gray));
                     grid.update(() -> grid.setChecked(view.isGrid()));
 
                     addTool.get(EditorTool.zoom);
@@ -330,7 +333,7 @@ public class OEditorDialog extends MapEditorDialog {
                     addTool.get(EditorTool.line);
                     addTool.get(EditorTool.fill);
 
-                    if (MVars.rules.gamemode == MRules.Gamemode.forts) {
+                    if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.forts) {
                         tools.row();
                         addTool.get(EditorTool.fortsPlotToggle);
                         addTool.get(EditorTool.fortsPlotCarver);
@@ -617,7 +620,7 @@ public class OEditorDialog extends MapEditorDialog {
             }
 
             if (view.editorAction == null) for (EditorTool tool : EditorTool.values()) {
-                if (tool.lockedBehind != null && tool.lockedBehind != MVars.rules.gamemode) continue;
+                if (tool.lockedBehind != null && tool.lockedBehind != MVars.rules.gamemodeFactory()) continue;
                 if (tool.key() == KeyCode.unset) continue;
                 if (!Core.input.keyTap(tool.key())) continue;
                 MVars.toolOptions.tool = tool;

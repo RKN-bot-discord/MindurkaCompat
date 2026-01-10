@@ -1,14 +1,14 @@
 package mindurka;
 
+import mindurka.rules.MRules;
 import mindurka.ui.*;
 import mindustry.Vars;
 import mindustry.editor.MapView;
-import mindustry.ui.dialogs.CustomRulesDialog;
 
 public class MVars {
     private MVars() {}
 
-    public static MRules rules = new MRules();
+    public static MRules rules;
 
     public static MapView oldMapView;
     public static OMapView mapView;

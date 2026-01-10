@@ -1,14 +1,13 @@
 package mindurka.ui;
 
 import arc.util.Nullable;
-import mindurka.FortsPlotState;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.Team;
 import mindustry.world.Block;
 
 public class ToolOptions {
-    public FortsPlotState fortsToggleState = FortsPlotState.enabled;
+    // public FortsPlotState fortsToggleState = FortsPlotState.enabled;
     public boolean fortsCarverPlace = true;
     public int radius = 1;
     public Block selectedBlock = Blocks.stone;
@@ -33,7 +32,7 @@ public class ToolOptions {
         tool = EditorTool.pencil;
         radius = 1;
         fortsCarverPlace = true;
-        fortsToggleState = FortsPlotState.enabled;
+        // fortsToggleState = FortsPlotState.enabled;
         cliffAuto = false;
         cliffSides = (byte) 0;
         blend = Blend.normal;

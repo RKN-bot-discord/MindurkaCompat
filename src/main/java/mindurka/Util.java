@@ -43,4 +43,10 @@ public class Util {
     public static int unpacky(long p) {
         return (int) (p & 0xffffffffL);
     }
+
+    public static int mod(int x, int a) {
+        x = x % a;
+        if (x < 0) x = x + a;
+        return x;
+    }
 }

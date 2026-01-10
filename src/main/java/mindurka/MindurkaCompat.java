@@ -1,6 +1,8 @@
 package mindurka;
 
 import arc.Events;
+import mindurka.rules.MRules;
+import mindustry.Vars;
 import mindustry.game.EventType;
 
 public class MindurkaCompat {
@@ -17,8 +19,7 @@ public class MindurkaCompat {
         } catch (ClassNotFoundException ignore) {}
 
         Events.on(EventType.WorldLoadEndEvent.class, event -> {
-            MVars.rules.sync();
-            Stats.updateStats();
+            MVars.rules = new MRules(Vars.state.rules, Vars.state.map);
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {

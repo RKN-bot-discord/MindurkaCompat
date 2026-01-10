@@ -20,7 +20,6 @@ import arc.scene.ui.layout.Scl;
 import arc.struct.IntSet;
 import arc.util.Nullable;
 import arc.util.Tmp;
-import mindurka.MRules;
 import mindurka.MVars;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -354,44 +353,44 @@ public class OMapView extends MapView {
             Draw.reset();
         }
 
-        if (MVars.rules.gamemode == MRules.Gamemode.forts) {
-            if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect ||
-                    MVars.rules.fortsPlotKind == MRules.FortsPlotKind.square) {
-                int plotWidth, plotHeight, wallsLen, shiftX, shiftY;
+        // if (MVars.rules.gamemode == MRules.Gamemode.forts) {
+        //     if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect ||
+        //             MVars.rules.fortsPlotKind == MRules.FortsPlotKind.square) {
+        //         int plotWidth, plotHeight, wallsLen, shiftX, shiftY;
 
-                plotWidth = MVars.rules.fortsPlotParam1i;
-                plotHeight = MVars.rules.fortsPlotParam1i;
-                wallsLen = MVars.rules.fortsPlotParam3i;
-                shiftX = MVars.rules.fortsPlotParam4i;
-                shiftY = MVars.rules.fortsPlotParam5i;
+        //         plotWidth = MVars.rules.fortsPlotParam1i;
+        //         plotHeight = MVars.rules.fortsPlotParam1i;
+        //         wallsLen = MVars.rules.fortsPlotParam3i;
+        //         shiftX = MVars.rules.fortsPlotParam4i;
+        //         shiftY = MVars.rules.fortsPlotParam5i;
 
-                if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect)
-                    plotHeight = MVars.rules.fortsPlotParam2i;
+        //         if (MVars.rules.fortsPlotKind == MRules.FortsPlotKind.rect)
+        //             plotHeight = MVars.rules.fortsPlotParam2i;
 
-                int jX = plotWidth + wallsLen;
-                if (shiftX < 0) shiftX = jX - (shiftX % jX);
-                if (shiftX > wallsLen) shiftX = (shiftX % jX);
+        //         int jX = plotWidth + wallsLen;
+        //         if (shiftX < 0) shiftX = jX - (shiftX % jX);
+        //         if (shiftX > wallsLen) shiftX = (shiftX % jX);
 
-                int jY = plotHeight + wallsLen;
-                if (shiftY < 0) shiftY = jY - (shiftY % jY);
-                if (shiftY > wallsLen) shiftY = (shiftY % jY);
+        //         int jY = plotHeight + wallsLen;
+        //         if (shiftY < 0) shiftY = jY - (shiftY % jY);
+        //         if (shiftY > wallsLen) shiftY = (shiftY % jY);
 
-                final float F = 0xFF;
+        //         final float F = 0xFF;
 
-                Draw.color(0xE0 / F, 0xA8 / F, 0xA2 / F);
-                Lines.stroke(Scl.scl(1f));
+        //         Draw.color(0xE0 / F, 0xA8 / F, 0xA2 / F);
+        //         Lines.stroke(Scl.scl(1f));
 
-                int osy = shiftY;
-                for (; shiftX <= Vars.world.width() - jX; shiftX += jX) for (shiftY = osy; shiftY <= Vars.world.height() - jY; shiftY += jY) {
-                    Vec2 v$1 = unproject(shiftX, shiftY);
-                    float sx = v$1.x, sy = v$1.y;
-                    Vec2 v = unproject(shiftX + plotWidth, shiftY + plotHeight);
-                    Lines.rect(sx, sy, v.x - sx, v.y - sy);
-                }
+        //         int osy = shiftY;
+        //         for (; shiftX <= Vars.world.width() - jX; shiftX += jX) for (shiftY = osy; shiftY <= Vars.world.height() - jY; shiftY += jY) {
+        //             Vec2 v$1 = unproject(shiftX, shiftY);
+        //             float sx = v$1.x, sy = v$1.y;
+        //             Vec2 v = unproject(shiftX + plotWidth, shiftY + plotHeight);
+        //             Lines.rect(sx, sy, v.x - sx, v.y - sy);
+        //         }
 
-                Draw.reset();
-            }
-        }
+        //         Draw.reset();
+        //     }
+        // }
 
         if (MVars.toolOptions.selectedBlock == Blocks.cliff) {
             Vars.world.tiles.eachTile(tile -> {

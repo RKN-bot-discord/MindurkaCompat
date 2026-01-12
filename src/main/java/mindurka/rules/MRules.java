@@ -28,14 +28,13 @@ public class MRules {
                                                                      // But it's a great legacy, so we depend on it.
 
     private final Rules rules;
-    private final Map map;
+    private final int mapWidth, mapHeight;
 
-    public MRules(Map map) {
-        this(map.rules(), map);
-    }
-    public MRules(Rules rules, Map map) {
+    public MRules(Rules rules) { this(rules, Vars.world.width(), Vars.world.height()); }
+    public MRules(Rules rules, int mapWidth, int mapHeight) {
         this.rules = rules;
-        this.map = map;
+        this.mapWidth = mapWidth;
+        this.mapHeight = mapHeight;
 
         {
             @Nullable String format = rules.tags.get(FORMAT);
@@ -61,10 +60,14 @@ public class MRules {
             @Nullable Gamemode factory = Gamemode.forName(gamemodeName);
             if (factory == null) {
                 Log.err("Unknown gamemode '" + gamemodeName + "', some features may not be supported.");
-                gamemode = Gamemode.UNKNOWN.create(this, rules, map);
+                gamemode = Gamemode.UNKNOWN.create(newRulesContext());
             }
-            else gamemode = factory.create(this, rules, map);
+            else gamemode = factory.create(newRulesContext());
         }
+    }
+
+    private RulesContext newRulesContext() {
+        return new RulesContext(this, rules, mapWidth, mapHeight);
     }
 
     private void remove() {
@@ -86,7 +89,7 @@ public class MRules {
         if (gamemode != null) gamemode.remove();
         if (newValue == null) remove();
         else {
-            gamemode = newValue.create(this, rules, map);
+            gamemode = newValue.create(newRulesContext());
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());

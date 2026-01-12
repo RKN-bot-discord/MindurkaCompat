@@ -1,6 +1,7 @@
 package mindurka.ui;
 
 import arc.util.Nullable;
+import mindurka.rules.FortsPlotState;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.Team;
@@ -18,6 +19,7 @@ public class ToolOptions {
     public boolean cliffAuto;
     public byte cliffSides;
     public Blend blend;
+    public FortsPlotState fortsPlotState = FortsPlotState.enabled;
 
     public @Nullable BitMap fakeCliffsMap() {
         if (!cliffAuto) return null;

@@ -3,26 +3,28 @@ package mindurka.rules;
 import arc.util.Nullable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import mindustry.game.Rules;
-import mindustry.maps.Map;
+import mindurka.ui.RulesWrite;
+import mindustry.game.Team;
 
 public abstract class FortsPlotKind {
     public static final String PREFIX = Forts.PREFIX+".plot";
 
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public abstract class Impl {
-        protected final MRules customRules;
-        protected final Rules rules;
-        protected final Map map;
+        protected final RulesContext rc;
 
         public final FortsPlotKind factory() { return FortsPlotKind.this; }
         public final String name() { return factory().name(); }
 
         abstract void remove();
+
+        public abstract void writeRules(RulesWrite write);
+        public abstract void drawEditorGuides();
+        public abstract void setPlotInfo(int x, int y, FortsPlotState state, Team team);
     }
 
     public abstract String name();
-    abstract Impl create(MRules customRules, Rules rules, Map map);
+    abstract Impl create(RulesContext rc);
 
     private static FortsPlotKind[] plotKinds;
 
@@ -40,14 +42,16 @@ public abstract class FortsPlotKind {
                     }
 
                     @Override
-                    Impl create(MRules customRules, Rules rules, Map map) {
-                        return new Impl(customRules, rules, map) {
+                    Impl create(RulesContext rc) {
+                        return new Impl(rc) {
                             @Override void remove() {}
+                            @Override public void writeRules(RulesWrite write) {}
+                            @Override public void drawEditorGuides() {}
+                            @Override public void setPlotInfo(int x, int y, FortsPlotState state, Team team) {}
                         };
                     }
                 },
         };
-
     }
 
     public static @Nullable FortsPlotKind forName(String name) {

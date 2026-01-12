@@ -1,13 +1,21 @@
 package mindurka.ui;
 
+import arc.Core;
 import arc.input.KeyCode;
 import arc.math.Mathf;
+import arc.scene.ui.ImageButton;
+import arc.scene.ui.layout.Table;
 import arc.struct.LongSeq;
 import arc.util.Nullable;
 import mindurka.MVars;
 import mindurka.Util;
+import mindurka.rules.Forts;
+import mindurka.rules.FortsPlotState;
 import mindurka.rules.Gamemode;
 import mindurka.rules.Gamemodes;
+import mindustry.Vars;
+import mindustry.gen.Tex;
+import mindustry.ui.Styles;
 import mindustry.world.Block;
 
 public enum EditorTool {
@@ -165,6 +173,36 @@ public enum EditorTool {
             lockedBehind = Gamemodes.forts;
             blockTool = false;
         }
+
+        @Override
+        public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
+            if (!ctx.isLayer()) return;
+
+            EditorTool.line(oldx, oldy, newx, newy, (x, y) -> {
+                if (x < 0 || y < 0 || x >= ctx.width() || y >= ctx.height()) return;
+                ((Forts.Impl) MVars.rules.gamemode())
+                        .plotKind().setPlotInfo(x, y,
+                                (ctx instanceof EraseToolContext)
+                                        ? FortsPlotState.disabled
+                                        : MVars.toolOptions.fortsPlotState,
+                                MVars.toolOptions.team);
+            });
+        }
+
+        @Override
+        public void toolOptions(Table table) {
+            float size = Vars.mobile ? 50f : 58f;
+
+            table.label(() -> "@editor.mindurka.plotstate").left().pad(6).row();
+            table.table(t -> {
+                for (FortsPlotState state : FortsPlotState.values()) {
+                    ImageButton button = new ImageButton(Vars.ui.getIcon("forts-plot-" + state), Styles.squareTogglei);
+                    button.clicked(() -> MVars.toolOptions.fortsPlotState = state);
+                    button.update(() -> button.setChecked(MVars.toolOptions.fortsPlotState == state));
+                    t.add(button).size(size, size).left().tooltip("@plotstate." + state);
+                }
+            }).growX().left().row();
+        }
     },
 
     ;
@@ -206,6 +244,8 @@ public enum EditorTool {
     public void start(ToolContext ctx) {}
     public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {}
     public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) { touched(ctx, x2, y2, x2, y2); }
+
+    public void toolOptions(Table table) {}
 
     public interface Consii {
         void get(int x, int y);

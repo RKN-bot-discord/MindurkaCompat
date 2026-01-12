@@ -25,6 +25,12 @@ public class MIcons {
     public static final TextureRegionDrawable blendNormal = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 128, 128, 128));
     public static final TextureRegionDrawable blendReplace = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 128, 128, 128));
     public static final TextureRegionDrawable blendUnder = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 256, 128, 128, 128));
+    public static final TextureRegionDrawable fortsPlotDisabled = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 256, 128, 128));
+    public static final TextureRegionDrawable fortsPlotEnabled = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 256, 128, 128));
+    public static final TextureRegionDrawable fortsPlotPlaced = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 256, 256, 128, 128));
+    public static final TextureRegionDrawable fortsPlotLocked = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 384, 256, 128, 128));
+    public static final TextureRegionDrawable fortsPlotStatic = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 512, 256, 128, 128));
+    public static final TextureRegionDrawable fortsPlotGhost = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 640, 256, 128, 128));
 
     public static void load() {
         Icon.icons.put("cliff-auto", cliffAuto);
@@ -41,5 +47,11 @@ public class MIcons {
         Icon.icons.put("blend-normal", blendNormal);
         Icon.icons.put("blend-replace", blendReplace);
         Icon.icons.put("blend-under", blendUnder);
+        Icon.icons.put("forts-plot-disabled", fortsPlotDisabled);
+        Icon.icons.put("forts-plot-enabled", fortsPlotEnabled);
+        Icon.icons.put("forts-plot-placed", fortsPlotPlaced);
+        Icon.icons.put("forts-plot-locked", fortsPlotLocked);
+        Icon.icons.put("forts-plot-static", fortsPlotStatic);
+        Icon.icons.put("forts-plot-ghost", fortsPlotGhost);
     }
 }

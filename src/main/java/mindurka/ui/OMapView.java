@@ -21,6 +21,7 @@ import arc.struct.IntSet;
 import arc.util.Nullable;
 import arc.util.Tmp;
 import mindurka.MVars;
+import mindurka.rules.Gamemode;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.editor.MapView;
@@ -351,6 +352,11 @@ public class OMapView extends MapView {
             Lines.line(centerx, centery - sclheight/2f, centerx, centery + sclheight/2f);
 
             Draw.reset();
+        }
+
+        {
+            Gamemode.Impl gamemode = MVars.rules.gamemode();
+            if (gamemode != null) gamemode.drawEditorGuides();
         }
 
         // if (MVars.rules.gamemode == MRules.Gamemode.forts) {

@@ -34,4 +34,8 @@ public class TagWrite implements AutoCloseable {
         if (rules == null) return;
         rules.tags.put(key, v.name);
     }
+    public void w(String key, String v) {
+        if (rules == null) return;
+        rules.tags.put(key, v);
+    }
 }

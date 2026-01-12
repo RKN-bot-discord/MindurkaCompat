@@ -8,14 +8,11 @@ import lombok.RequiredArgsConstructor;
 import mindurka.ui.RulesWrite;
 import mindustry.game.Rules;
 import mindustry.game.Team;
-import mindustry.maps.Map;
 
 public abstract class Gamemode {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public abstract class Impl {
-        protected final MRules customRules;
-        protected final Rules rules;
-        protected final Map map;
+        protected final RulesContext rc;
 
         public final Gamemode factory() { return Gamemode.this; }
 
@@ -37,6 +34,8 @@ public abstract class Gamemode {
          */
         public final void setRules() {
             // Reset potentially modified rules to default.
+
+            final Rules rules = rc.rules;
 
             for (Team team : Team.all) {
                 Rules.TeamRule t = rules.teams.get(team);
@@ -83,6 +82,7 @@ public abstract class Gamemode {
          * Add gamemode rules to a settings dialog.
          */
         public void writeGamemodeRules(RulesWrite write) {}
+        public void drawEditorGuides() {}
     }
 
      public static Gamemode UNKNOWN = new Gamemode() {
@@ -92,8 +92,8 @@ public abstract class Gamemode {
          }
 
          @Override
-         Impl create(MRules customRules, Rules rules, Map map) {
-             return new Impl(customRules, rules, map) {
+         Impl create(RulesContext rc) {
+             return new Impl(rc) {
                  @Override void remove() {}
                  @Override
                  protected void _setRules() {}
@@ -113,7 +113,7 @@ public abstract class Gamemode {
       * This method is used by {@link MRules} and is not intended to be called
       * directly.
       */
-     abstract Impl create(MRules customRules, Rules rules, Map map);
+     abstract Impl create(RulesContext rc);
 
      private static final OrderedMap<String, Gamemode> factories = new OrderedMap<>();
 
@@ -136,82 +136,3 @@ public abstract class Gamemode {
          return factories.orderedKeys();
      }
 }
-
-// @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-// public abstract class Gamemode {
-//     public abstract static class Factory {
-//         public abstract String name();
-//
-//         abstract Gamemode create(MRules customRules, Rules rules, Map map);
-//     }
-//
-//     public static Factory UNKNOWN = new Factory() {
-//         @Override
-//         public String name() {
-//             return "unknown";
-//         }
-//
-//         @Override
-//         Gamemode create(MRules customRules, Rules rules, Map map) {
-//             return new Gamemode(customRules, rules, map) {
-//                 @Override void remove() {}
-//                 @Override
-//                 protected void _setRules() {}
-//             };
-//         }
-//     };
-//
-//     protected final MRules customRules;
-//     protected final Rules rules;
-//     protected final Map map;
-//
-//     abstract void remove();
-//
-//     public final void setRules() {
-//         // Reset potentially modified rules to default.
-//
-//         for (Team team : Team.all) {
-//             Rules.TeamRule t = rules.teams.get(team);
-//             t.cheat = false;
-//         }
-//         rules.modeName = "";
-//         rules.onlyDepositCore = false;
-//         rules.coreIncinerates = false;
-//         rules.attackMode = false;
-//         rules.possessionAllowed = true;
-//         rules.enemyCoreBuildRadius = 30f;
-//         rules.schematicsAllowed = true;
-//         rules.loadout.clear();
-//         rules.bannedBlocks.clear();
-//         rules.hideBannedBlocks = false;
-//         rules.infiniteResources = false;
-//
-//         // Content patches apparently must be set separately.
-//
-//         _setRules();
-//     }
-//     protected abstract void _setRules();
-//
-//     public @Nullable String builtInContentPatch() { return null; }
-//
-//     private static final OrderedMap<String, Factory> factories = new OrderedMap<>();
-//
-//     public static void addGamemode(Factory factory) {
-//         factories.put(factory.name(), factory);
-//     }
-//
-//     private static boolean initialized = false;
-//     public static void init() {
-//         if (initialized) throw new IllegalStateException("Already initialized");
-//         initialized = true;
-//
-//         addGamemode(new Forts.Factory());
-//     }
-//     public static @Nullable Factory forName(String name) {
-//         return factories.get(name);
-//     }
-//
-//     public static Seq<String> keys() {
-//         return factories.orderedKeys();
-//     }
-// }

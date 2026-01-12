@@ -19,7 +19,7 @@ public class MindurkaCompat {
         } catch (ClassNotFoundException ignore) {}
 
         Events.on(EventType.WorldLoadEndEvent.class, event -> {
-            MVars.rules = new MRules(Vars.state.rules, Vars.state.map);
+            MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {

@@ -7,7 +7,6 @@ import mindustry.content.Items;
 import mindustry.content.Planets;
 import mindustry.game.Rules;
 import mindustry.game.Team;
-import mindustry.maps.Map;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
 
@@ -50,13 +49,15 @@ public class Forts extends Gamemode {
     }
 
     @Override
-    Impl create(MRules customRules, Rules rules, Map map) {
-        return new Impl(customRules, rules, map);
+    Impl create(RulesContext rc) {
+        return new Impl(rc);
     }
 
     public class Impl extends Gamemode.Impl {
-        private Impl(MRules customRules, Rules rules, Map map) {
-            super(customRules, rules, map);
+        private Impl(RulesContext rc) {
+            super(rc);
+
+            final Rules rules = rc.rules;
 
             try (TagRead read = TagRead.of(rules)) {
                 {
@@ -64,7 +65,7 @@ public class Forts extends Gamemode {
                     FortsPlotKind factory = FortsPlotKind.forName(plotKindS);
                     if (factory == null) factory = FortsPlotKind.forName("square");
                     assert factory != null;
-                    plotKind = factory.create(customRules, rules, map);
+                    plotKind = factory.create(rc);
                 }
 
                 enable1va = read.r(ENABLE_1VA, true);
@@ -99,6 +100,8 @@ public class Forts extends Gamemode {
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
+            // TODO: Select block.
+
             write.b("rules.mindurka.enable_1va", this::enable1va, this::enable1va);
             write.b("rules.mindurka.enable_vnw", this::enableVnw, this::enableVnw);
             write.spacer();
@@ -126,20 +129,37 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.neoplasia.damage", this::neoplasiaDamage, this::neoplasiaDamage).enabled(this::neoplasiaEnabled).min(0);
             write.spacer();
 
-            write.selection("editor.mindurka.fortsPlotKind", addItem -> {
+            Runnable[] refreshPlotKindRules = new Runnable[1];
+
+            write.selection("editor.mindurka.forts.plot", addItem -> {
                 for (FortsPlotKind kind : FortsPlotKind.values()) {
-                    addItem.add("rules.mindurka.fortsPlotKind." + kind.name(), kind);
+                    addItem.add("rules.mindurka.forts.plotKind." + kind.name(), kind);
                 }
             }, value -> {
                 plotKind(value);
+                refreshPlotKindRules[0].run();
             }, plotKind.factory());
+
+            {
+                RulesWrite pwrite = write.table();
+                refreshPlotKindRules[0] = () -> {
+                    pwrite.clear();
+                    plotKind().writeRules(pwrite);
+                };
+                refreshPlotKindRules[0].run();
+            }
+        }
+
+        @Override
+        public void drawEditorGuides() {
+            plotKind().drawEditorGuides();
         }
 
         private FortsPlotKind.Impl plotKind;
         public FortsPlotKind.Impl plotKind() { return plotKind; };
         public Impl plotKind(FortsPlotKind value) {
             plotKind.remove();
-            plotKind = value.create(customRules, rules, map);
+            plotKind = value.create(rc);
             return this;
         }
 
@@ -147,7 +167,7 @@ public class Forts extends Gamemode {
         public boolean enable1va() { return enable1va; }
         public Impl enable1va(boolean value) {
             enable1va = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(ENABLE_1VA, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ENABLE_1VA, value); }
             return this;
         }
 
@@ -155,7 +175,7 @@ public class Forts extends Gamemode {
         public boolean enableVnw() { return enableVnw; }
         public Impl enableVnw(boolean value) {
             enableVnw = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(ENABLE_VNW, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ENABLE_VNW, value); }
             return this;
         }
 
@@ -163,7 +183,7 @@ public class Forts extends Gamemode {
         public boolean thorEnabled() { return thorEnabled; }
         public Impl thorEnabled(boolean value) {
             thorEnabled = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_ENABLED, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_ENABLED, value); }
             return this;
         }
 
@@ -171,7 +191,7 @@ public class Forts extends Gamemode {
         public float thorDelay() { return thorDelay; }
         public Impl thorDelay(float value) {
             thorDelay = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_DELAY, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_DELAY, value); }
             return this;
         }
 
@@ -179,7 +199,7 @@ public class Forts extends Gamemode {
         public float thorCooldown() { return thorCooldown; }
         public Impl thorCooldown(float value) {
             thorCooldown = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_COOLDOWN, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_COOLDOWN, value); }
             return this;
         }
 
@@ -187,7 +207,7 @@ public class Forts extends Gamemode {
         public float thorDamageMultiplier() { return thorDamageMultiplier; }
         public Impl thorDamageMultiplier(float value) {
             thorDamageMultiplier = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_DAMAGE_MULTIPLIER, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_DAMAGE_MULTIPLIER, value); }
             return this;
         }
 
@@ -195,7 +215,7 @@ public class Forts extends Gamemode {
         public float thorRadiusMultiplier() { return thorRadiusMultiplier; }
         public Impl thorRadiusMultiplier(float value) {
             thorRadiusMultiplier = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_RADIUS_MULTIPLIER, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_RADIUS_MULTIPLIER, value); }
             return this;
         }
 
@@ -203,7 +223,7 @@ public class Forts extends Gamemode {
         public Block thorBlock() { return thorBlock; }
         public Impl thorBlock(Block value) {
             thorBlock = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(THOR_BLOCK, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(THOR_BLOCK, value); }
             return this;
         }
 
@@ -211,7 +231,7 @@ public class Forts extends Gamemode {
         public boolean impactEnabled() { return impactEnabled; }
         public Impl impactEnabled(boolean value) {
             impactEnabled = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_ENABLED, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_ENABLED, value); }
             return this;
         }
 
@@ -219,7 +239,7 @@ public class Forts extends Gamemode {
         public float impactDelay() { return impactDelay; }
         public Impl impactDelay(float value) {
             impactDelay = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_DELAY, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_DELAY, value); }
             return this;
         }
 
@@ -227,7 +247,7 @@ public class Forts extends Gamemode {
         public float impactCooldown() { return impactCooldown; }
         public Impl impactCooldown(float value) {
             impactCooldown = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_COOLDOWN, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_COOLDOWN, value); }
             return this;
         }
 
@@ -235,7 +255,7 @@ public class Forts extends Gamemode {
         public float impactDuration() { return impactDuration; }
         public Impl impactDuration(float value) {
             impactDuration = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_DURATION, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_DURATION, value); }
             return this;
         }
 
@@ -243,7 +263,7 @@ public class Forts extends Gamemode {
         public float impactExplosionDamage() { return impactExplosionDamage; }
         public Impl impactExplosionDamage(float value) {
             impactExplosionDamage = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_EXPLOSION_DAMAGE, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_EXPLOSION_DAMAGE, value); }
             return this;
         }
 
@@ -251,7 +271,7 @@ public class Forts extends Gamemode {
         public float impactExplosionRadius() { return impactExplosionRadius; }
         public Impl impactExplosionRadius(float value) {
             impactExplosionRadius = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_EXPLOSION_RADIUS, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_EXPLOSION_RADIUS, value); }
             return this;
         }
 
@@ -259,7 +279,7 @@ public class Forts extends Gamemode {
         public boolean impactInstakill() { return impactInstakill; }
         public Impl impactInstakill(boolean value) {
             impactInstakill = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_INSTAKILL, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_INSTAKILL, value); }
             return this;
         }
 
@@ -267,7 +287,7 @@ public class Forts extends Gamemode {
         public Block impactBlock() { return impactBlock; }
         public Impl impactBlock(Block value) {
             impactBlock = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(IMPACT_BLOCK, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(IMPACT_BLOCK, value); }
             return this;
         }
 
@@ -275,7 +295,7 @@ public class Forts extends Gamemode {
         public boolean neoplasiaEnabled() { return impactEnabled; }
         public Impl neoplasiaEnabled(boolean value) {
             neoplasiaEnabled = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_ENABLED, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_ENABLED, value); }
             return this;
         }
 
@@ -283,7 +303,7 @@ public class Forts extends Gamemode {
         public float neoplasiaDelay() { return neoplasiaDelay; }
         public Impl neoplasiaDelay(float value) {
             neoplasiaDelay = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_DELAY, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_DELAY, value); }
             return this;
         }
 
@@ -291,7 +311,7 @@ public class Forts extends Gamemode {
         public float neoplasiaCooldown() { return neoplasiaCooldown; }
         public Impl neoplasiaCooldown(float value) {
             neoplasiaCooldown = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_COOLDOWN, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_COOLDOWN, value); }
             return this;
         }
 
@@ -299,7 +319,7 @@ public class Forts extends Gamemode {
         public int neoplasiaLength() { return neoplasiaLength; }
         public Impl neoplasiaLength(int value) {
             neoplasiaLength = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_LENGTH, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_LENGTH, value); }
             return this;
         }
 
@@ -307,7 +327,7 @@ public class Forts extends Gamemode {
         public float neoplasiaProgressSpeed() { return neoplasiaProgressSpeed; }
         public Impl neoplasiaProgressSpeed(float value) {
             neoplasiaProgressSpeed = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_PROGRESS_SPEED, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_PROGRESS_SPEED, value); }
             return this;
         }
 
@@ -315,7 +335,7 @@ public class Forts extends Gamemode {
         public float neoplasiaDamage() { return neoplasiaDamage; }
         public Impl neoplasiaDamage(float value) {
             neoplasiaDamage = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_DAMAGE, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_DAMAGE, value); }
             return this;
         }
 
@@ -323,12 +343,14 @@ public class Forts extends Gamemode {
         public Block neoplasiaBlock() { return neoplasiaBlock; }
         public Impl neoplasiaBlock(Block value) {
             neoplasiaBlock = value;
-            try (TagWrite write = TagWrite.of(rules)) { write.w(NEOPLASIA_BLOCK, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_BLOCK, value); }
             return this;
         }
 
         @Override
         void remove() {
+            final Rules rules = rc.rules;
+
             rules.tags.remove(THOR_ENABLED);
             rules.tags.remove(THOR_DELAY);
             rules.tags.remove(THOR_COOLDOWN);
@@ -358,6 +380,8 @@ public class Forts extends Gamemode {
 
         @Override
         protected void _setRules() {
+            final Rules rules = rc.rules;
+
             for (Team team : Team.all) {
                 Rules.TeamRule t = rules.teams.get(team);
                 t.cheat = true;

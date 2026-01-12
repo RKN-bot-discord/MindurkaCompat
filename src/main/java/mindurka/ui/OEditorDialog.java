@@ -123,7 +123,7 @@ public class OEditorDialog extends MapEditorDialog {
                 editor.OBeginEdit(200, 200);
             }
             MVars.toolOptions.reset();
-            MVars.rules = new MRules(Vars.state.rules, Vars.state.map);
+            MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
             shownWithMap = false;
         });
 
@@ -462,6 +462,9 @@ public class OEditorDialog extends MapEditorDialog {
         float size = Vars.mobile ? 50f : 58f;
 
         blockOptions.clearChildren();
+
+        MVars.toolOptions.tool.toolOptions(blockOptions);
+
         if (!MVars.toolOptions.tool.blockTool) return;
 
         blockOptions.table(t -> {

@@ -1,6 +1,5 @@
 package mindurka.util;
 
-import arc.util.Log;
 import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 

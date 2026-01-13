@@ -162,6 +162,11 @@ public class Forts extends Gamemode {
         }
 
         @Override
+        public void editingResumed() {
+            plotKind().editingResumed();
+        }
+
+        @Override
         public void drawEditorGuides() {
             plotKind().drawEditorGuides();
         }

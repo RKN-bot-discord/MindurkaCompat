@@ -140,6 +140,19 @@ public class FortsRectangularStates {
         return placePlot(team, scheme, x, y, false);
     }
     public boolean placePlot(Team team, Schematic scheme, int x, int y, boolean ignoreAdjacent) {
+        if (!placePlotNoOverride(team, scheme, x, y, ignoreAdjacent)) return false;
+
+        int plotX = (x - startX) / jX;
+        int plotY = (y - startY) / jY;
+
+        int i = plotX + plotY * plotsX;
+
+        states[i] = FortsPlotState.placed;
+        teams[i] = team;
+
+        return true;
+    }
+    boolean placePlotNoOverride(Team team, Schematic scheme, int x, int y, boolean ignoreAdjacent) {
         if (scheme.width != width + wallSize * 2 || scheme.height != height + wallSize * 2) return false;
         if (x < startX || y < startY) return false;
         int plotX = (x - startX) / jX;
@@ -165,8 +178,74 @@ public class FortsRectangularStates {
         scheme.paste(wallSize, wallSize, scheme.width - wallSize * 2, scheme.height - wallSize * 2, Vars.world.tiles,
                 startX + plotX * jX, startY + plotY * jY);
 
+        if (intersectionParts == null) intersectionParts = new IntMap<>();
+        for (int dx = 0; dx <= 1; dx++) for (int dy = 0; dy <= 1; dy++) {
+            int ii = (plotX + dx) + (plotY + dy) * (plotsX + 1);
+            if (intersectionParts.containsKey(ii)) continue;
+            int tx = startX + (plotX + dx) * jX - wallSize;
+            int ty = startY + (plotY + dy) * jY - wallSize;
+            intersectionParts.put(ii, Schematic.of(Vars.world.tiles, tx, ty, wallSize, wallSize));
+            scheme.paste(dx * jX, dy * jY, wallSize, wallSize, Vars.world.tiles, tx, ty);
+        }
+
+        if (verticalWalls == null) verticalWalls = new IntMap<>();
+        if (horizontalWalls == null) horizontalWalls = new IntMap<>();
+        for (int d = 0; d <= 1; d++) {
+            int ix = (plotX + d) + plotY * (plotsX + 1);
+            int iy = plotX + (plotY + d) * plotsX;
+
+            if (!horizontalWalls.containsKey(ix)) {
+                int tx = startX + (plotX + d) * jX - wallSize;
+                int ty = startY + plotY * jY;
+                horizontalWalls.put(ix, Schematic.of(Vars.world.tiles, tx, ty, wallSize, height));
+                scheme.paste(jX * d, wallSize, wallSize, height, Vars.world.tiles, tx, ty);
+            }
+
+            if (!verticalWalls.containsKey(iy)) {
+                int tx = startX + plotX * jX;
+                int ty = startY + (plotY + d) * jY - wallSize;
+                verticalWalls.put(iy, Schematic.of(Vars.world.tiles, tx, ty, width, wallSize));
+                scheme.paste(wallSize, jY * d, width, wallSize, Vars.world.tiles, tx, ty);
+            }
+        }
+
         return true;
     }
+
+    // public boolean removePlot(Schematic scheme, int x, int y) {
+    //     if (scheme.width != width + wallSize * 2 || scheme.height != height + wallSize * 2) return false;
+    //     if (x < startX || y < startY) return false;
+    //     int plotX = (x - startX) / jX;
+    //     int plotY = (y - startY) / jY;
+    //     if (plotX >= plotsX || plotY >= plotsY) return false;
+    //     if ((x - startX) % jX >= width || (y - startY) % jY >= height) return false;
+
+    //     int i = plotX + plotY * plotsX;
+    //     if (centerParts == null || !centerParts.containsKey(i)) return false;
+
+    //     centerParts.remove(i).paste(Vars.world.tiles, startX + plotX * jX, startY + plotY * jY);
+
+    //     states[i] = FortsPlotState.enabled;
+
+    //     intersectionParts: for (int dx = 0; dx <= 1; dx++) for (int dy = 0; dy <= 1; dy++) {
+    //         int ii = (plotX + dx) + (plotY + dy) * (plotsX + 1);
+    //         if (!intersectionParts.containsKey(ii)) continue;
+
+    //         for (int ddx = -1; ddx <= 0; ddx++) for (int ddy = -1; ddy <= 0; ddy++) {
+    //             int px = plotX + dx + ddx, py = plotY + dy + ddy;
+    //             if (px < 0 || py < 0 || px >= plotsX || py >= plotsY) continue;
+
+    //             int iii = px + py * plotsX;
+    //             if (states[iii].placed()) break intersectionParts;
+    //         }
+
+    //         int tx = startX + (plotX + dx) * jX - wallSize;
+    //         int ty = startY + (plotY + dy) * jY - wallSize;
+    //         intersectionParts.remove(ii).paste(Vars.world.tiles, tx, ty);
+    //     }
+
+    //     return true;
+    // }
 
     public void placeDefaultPlots(Func<Team, Schematic> scheme) {
         for (int x = 0; x < plotsX; x++) for (int y = 0; y < plotsY; y++) {
@@ -174,9 +253,45 @@ public class FortsRectangularStates {
             Team team = teams[i];
             Schematic schem = scheme.get(team);
             if (schem == null) return;
-            if (states[i].placed()) placePlot(teams[i], schem, startX + x * jX, startY + y * jY, true);
+            if (states[i].placed()) placePlotNoOverride(teams[i], schem, startX + x * jX, startY + y * jY, true);
         }
     }
 
-    public void undoAllPlots() {}
+    /**
+     * <b>Highly unsafe!</b> Revert all plot schematics without modifying any states.
+     */
+    public void removeAllPlots() {
+        Schematic.Options options = new Schematic.Options().noNet().skipBuildings();
+
+        if (centerParts == null) return;
+
+        centerParts.forEach(x -> {
+            int plotX = x.key % plotsX;
+            int plotY = x.key / plotsX;
+            x.value.paste(Vars.world.tiles, startX + plotX * jX, startY + plotY * jY, options);
+        });
+
+        intersectionParts.forEach(x -> {
+            int plotX = x.key % (plotsX + 1);
+            int plotY = x.key / (plotsX + 1);
+            x.value.paste(Vars.world.tiles, startX + plotX * jX - wallSize, startY + plotY * jY - wallSize, options);
+        });
+
+        horizontalWalls.forEach(x -> {
+            int plotX = x.key % (plotsX + 1);
+            int plotY = x.key / (plotsX + 1);
+            x.value.paste(Vars.world.tiles, startX + plotX * jX - wallSize, startY + plotY * jY, options);
+        });
+
+        verticalWalls.forEach(x -> {
+            int plotX = x.key % plotsX;
+            int plotY = x.key / plotsX;
+            x.value.paste(Vars.world.tiles, startX + plotX * jX, startY + plotY * jY - wallSize, options);
+        });
+
+        centerParts = null;
+        intersectionParts = null;
+        horizontalWalls = null;
+        verticalWalls = null;
+    }
 }

@@ -34,10 +34,18 @@ public class Schematic {
         public boolean skipAir;
         /** Skip empty floors. */
         public boolean skipEmpty;
+        /** Skip buildings. */
+        public boolean skipBuildings;
         /** Use net updates. */
         public boolean updateNet = true;
         /** Team to use when placing blocks. */
         public Team team = Team.derelict;
+        // /** Mask to select affected blocks. Pasting only. */
+        // public Schematic mask = null;
+        // /** Starting x position on the mask. */
+        // public int maskX = 0;
+        // /** Starting y position on the mask. */
+        // public int maskY = 0;
 
         /** Skip air blocks. */
         public Options skipAir() {
@@ -54,6 +62,11 @@ public class Schematic {
             skipEmpty = true;
             return this;
         }
+        /** Skip buildings. */
+        public Options skipBuildings() {
+            skipBuildings = true;
+            return this;
+        }
         /** Disable network updates. */
         public Options noNet() {
             updateNet = false;
@@ -64,13 +77,26 @@ public class Schematic {
             this.team = team;
             return this;
         }
+        // /** Set mask. */
+        // public Options mask(Schematic mask) { return mask(mask, 0, 0); }
+        // /** Set mask. */
+        // public Options mask(Schematic mask, int x, int y) {
+        //     this.mask = mask;
+        //     maskX = x;
+        //     maskY = y;
+        //     return this;
+        // }
         /** Reset all fields to defaults. */
         public Options reset() {
             skipAir = false;
             skipEmpty = false;
             skipNoOverlay = false;
+            skipBuildings = false;
             updateNet = true;
             team = Team.derelict;
+            // mask = null;
+            // maskX = 0;
+            // maskY = 0;
             return this;
         }
     }
@@ -112,9 +138,11 @@ public class Schematic {
             if (schematic.floors[cursor] == Blocks.empty && options.skipEmpty) schematic.floors[cursor] = null;
 
             Block block = tile.block();
-            if (!block.isMultiblock() || tile.isCenter()) {
-                schematic.blocks[cursor] = tile.block();
+            a: if (!block.isMultiblock() || tile.isCenter()) {
                 Building build = tile.build;
+                if (build != null && options.skipBuildings) break a;
+
+                schematic.blocks[cursor] = tile.block();
                 if (build != null) {
                     schematic.build[cursor] = new BuildData(build.rotation, build.config());
                 }
@@ -193,13 +221,13 @@ public class Schematic {
         if (dsty >= dst.height) return;
 
         if (dstx < 0) {
-            x -= dstx;
-            w += dstx;
+            x += dstx;
+            w -= dstx;
             dstx = 0;
         }
         if (dsty < 0) {
-            y -= dsty;
-            h += dsty;
+            y += dsty;
+            h -= dsty;
             dsty = 0;
         }
 
@@ -212,24 +240,29 @@ public class Schematic {
             y = 0;
         }
 
-        w = Math.min(w, width - x);
         w = Math.min(w, dst.width - dstx);
+        w = Math.min(w, width - x);
 
-        h = Math.min(h, height - y);
         h = Math.min(h, dst.height - dsty);
+        h = Math.min(h, height - y);
 
         if (w == 0 || h == 0) return;
         if (x >= width) return;
         if (y >= height) return;
 
         for (int dx = 0; dx < w; dx++) for (int dy = 0; dy < h; dy++) {
-            int idx = x + dx + (y + dy) * height;
+            int idx = x + dx + (y + dy) * width;
+
+            if (idx >= blocks.length) {
+                throw new RuntimeException("Bailing out! Schematic (" + width + "x" + height + "): x=" + x + ", y=" + y + ", w=" + w + ", h=" + h + ", dstx=" + dstx + ", dsty=" + dsty + ", idx=" + idx + ", dx=" + dx + ", dy=" + dy);
+            }
 
             Tile tile = dst.get(dstx + dx, dsty + dy);
             if (tile == null) continue;
 
             BuildData data = this.build[idx];
-            if (blocks[idx] != null && !(blocks[idx] == Blocks.air && options.skipAir)) {
+            block: if (blocks[idx] != null && !(blocks[idx] == Blocks.air && options.skipAir)) {
+                if (options.skipBuildings && tile.build != null || this.build[idx] != null) break block;
                 if (options.updateNet) tile.setNet(blocks[idx], options.team, data == null ? 0 : data.rotation);
                 else tile.setBlock(blocks[idx], options.team, data == null ? 0 : data.rotation);
             }

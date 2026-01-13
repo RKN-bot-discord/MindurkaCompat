@@ -157,6 +157,7 @@ public class OEditorDialog extends MapEditorDialog {
         shownWithMap = true;
         reloadMap = false;
         show();
+        if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
         lastSavedRules = null;
         // saved = false;

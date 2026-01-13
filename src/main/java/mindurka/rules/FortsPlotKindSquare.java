@@ -94,6 +94,11 @@ public class FortsPlotKindSquare extends FortsPlotKind {
             plotStates.placeDefaultPlots(this::plotSchematic);
         }
 
+        @Override
+        public void editingResumed() {
+            plotStates.removeAllPlots();
+        }
+
         private int size;
         public int size() { return size; }
         @Override public int plotWidth() { return size; }

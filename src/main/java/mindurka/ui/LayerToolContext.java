@@ -75,7 +75,8 @@ public class LayerToolContext implements ToolContext {
         Tile tile = Vars.world.tiles.get(x, y);
         if (tile == null) return;
         tile.floorData = data;
-        tile.setFloor(floor);
+        if (MVars.toolOptions.floorsAsOverlays) tile.setOverlay(floor);
+        else tile.setFloor(floor);
         if (floor.saveConfig)
             floor.placeEnded(tile, null, 0, floor.lastConfig);
     }
@@ -137,6 +138,7 @@ public class LayerToolContext implements ToolContext {
     public Floor floor(int x, int y) {
         Tile tile = Vars.world.tiles.get(x, y);
         if (tile == null) return Blocks.empty.asFloor();
+        if (MVars.toolOptions.floorsAsOverlays) return tile.overlay();
         return tile.floor();
     }
 

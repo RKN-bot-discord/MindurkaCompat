@@ -1,6 +1,8 @@
 package mindurka.rules;
 
+import arc.struct.IntMap;
 import mindurka.ui.RulesWrite;
+import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
@@ -145,9 +147,18 @@ public class Forts extends Gamemode {
                 refreshPlotKindRules[0] = () -> {
                     pwrite.clear();
                     plotKind().writeRules(pwrite);
+
+                    pwrite.teams("rules.teams", (team, tw) -> {
+                        plotKind().writeTeamRules(team, tw);
+                    }, team -> false);
                 };
                 refreshPlotKindRules[0].run();
             }
+        }
+
+        @Override
+        public void onStart() {
+            plotKind().onStart();
         }
 
         @Override

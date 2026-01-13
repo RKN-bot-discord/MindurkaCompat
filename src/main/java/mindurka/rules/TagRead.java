@@ -1,6 +1,8 @@
 package mindurka.rules;
 
 import arc.struct.Seq;
+import mindurka.util.FormatException;
+import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.game.Rules;
 import mindustry.world.Block;
@@ -52,5 +54,12 @@ public class TagRead implements AutoCloseable {
         String value = rules.tags.get(key);
         if (value == null) return de;
         return value;
+    }
+    public Schematic r(String key, Schematic de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null) return de;
+        try { return Schematic.of(value); }
+        catch (FormatException ignored) { return de; }
     }
 }

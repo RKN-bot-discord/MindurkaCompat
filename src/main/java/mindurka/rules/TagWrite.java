@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import mindurka.util.Schematic;
 import mindustry.game.Rules;
 import mindustry.world.Block;
 
@@ -37,5 +38,9 @@ public class TagWrite implements AutoCloseable {
     public void w(String key, String v) {
         if (rules == null) return;
         rules.tags.put(key, v);
+    }
+    public void w(String key, Schematic v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.serialize());
     }
 }

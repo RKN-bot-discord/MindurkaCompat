@@ -1,6 +1,7 @@
 package mindurka;
 
 import arc.Events;
+import arc.util.Log;
 import mindurka.rules.MRules;
 import mindustry.Vars;
 import mindustry.game.EventType;
@@ -20,6 +21,7 @@ public class MindurkaCompat {
 
         Events.on(EventType.WorldLoadEndEvent.class, event -> {
             MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
+            if (MVars.rules.gamemode() != null && !MVars.mapEditor.isLoading()) MVars.rules.gamemode().onStart();
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {

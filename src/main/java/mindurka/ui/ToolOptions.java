@@ -20,6 +20,7 @@ public class ToolOptions {
     public byte cliffSides;
     public Blend blend;
     public FortsPlotState fortsPlotState = FortsPlotState.enabled;
+    public boolean floorsAsOverlays = false;
 
     public @Nullable BitMap fakeCliffsMap() {
         if (!cliffAuto) return null;

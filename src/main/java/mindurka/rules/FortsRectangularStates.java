@@ -1,13 +1,16 @@
 package mindurka.rules;
 
+import arc.func.Func;
 import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Fill;
 import arc.graphics.g2d.Lines;
 import arc.math.geom.Vec2;
 import arc.scene.ui.layout.Scl;
-import arc.util.Log;
+import arc.struct.IntMap;
 import mindurka.MVars;
+import mindurka.util.Schematic;
+import mindustry.Vars;
 import mindustry.game.Team;
 
 import java.util.Arrays;
@@ -19,6 +22,7 @@ public class FortsRectangularStates {
     private final Team[] teams;
     private final int startX;
     private final int startY;
+    private final int wallSize;
     private final int jX;
     private final int jY;
     private final int plotsX;
@@ -26,8 +30,15 @@ public class FortsRectangularStates {
     private final int width;
     private final int height;
 
+    private IntMap<Schematic> centerParts;
+    private IntMap<Schematic> horizontalWalls;
+    private IntMap<Schematic> verticalWalls;
+    private IntMap<Schematic> intersectionParts;
+
     public FortsRectangularStates(int width, int height, int wallSize, int shiftX, int shiftY,
                                   int mapWidth, int mapHeight, String statesData) {
+        this.wallSize = wallSize;
+
         jX = width + wallSize;
         jY = height + wallSize;
 
@@ -124,4 +135,48 @@ public class FortsRectangularStates {
         }
         return str.toString();
     }
+
+    public boolean placePlot(Team team, Schematic scheme, int x, int y) {
+        return placePlot(team, scheme, x, y, false);
+    }
+    public boolean placePlot(Team team, Schematic scheme, int x, int y, boolean ignoreAdjacent) {
+        if (scheme.width != width + wallSize * 2 || scheme.height != height + wallSize * 2) return false;
+        if (x < startX || y < startY) return false;
+        int plotX = (x - startX) / jX;
+        int plotY = (y - startY) / jY;
+        if (plotX >= plotsX || plotY >= plotsY) return false;
+        if ((x - startX) % jX >= width || (y - startY) % jY >= height) return false;
+
+        int i = plotX + plotY * plotsX;
+        if (centerParts != null && centerParts.containsKey(i)) return false;
+        if (!ignoreAdjacent) {
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) {
+                if (dx + plotX < 0 || dy + plotY < 0) continue;
+                if (dx + plotX >= plotsX || dy + plotY >= plotsY) continue;
+                int nx = dx + plotX + (dy + plotY) * plotsY;
+                if (states[nx].placed() && team != teams[nx]) return false;
+            }
+        }
+
+        if (centerParts == null) centerParts = new IntMap<>();
+        centerParts.put(i, Schematic.of(Vars.world.tiles,
+                startX + plotX * jX, startY + plotY * jY,
+                width, height));
+        scheme.paste(wallSize, wallSize, scheme.width - wallSize * 2, scheme.height - wallSize * 2, Vars.world.tiles,
+                startX + plotX * jX, startY + plotY * jY);
+
+        return true;
+    }
+
+    public void placeDefaultPlots(Func<Team, Schematic> scheme) {
+        for (int x = 0; x < plotsX; x++) for (int y = 0; y < plotsY; y++) {
+            int i = x + y * plotsX;
+            Team team = teams[i];
+            Schematic schem = scheme.get(team);
+            if (schem == null) return;
+            if (states[i].placed()) placePlot(teams[i], schem, startX + x * jX, startY + y * jY, true);
+        }
+    }
+
+    public void undoAllPlots() {}
 }

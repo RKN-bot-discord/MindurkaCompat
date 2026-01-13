@@ -14,7 +14,6 @@ import mindurka.rules.FortsPlotState;
 import mindurka.rules.Gamemode;
 import mindurka.rules.Gamemodes;
 import mindustry.Vars;
-import mindustry.gen.Tex;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
 

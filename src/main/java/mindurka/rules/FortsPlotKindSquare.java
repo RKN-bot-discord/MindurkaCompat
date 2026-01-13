@@ -1,6 +1,13 @@
 package mindurka.rules;
 
+import arc.struct.IntMap;
+import arc.util.Log;
+import arc.util.Strings;
+import mindurka.MVars;
 import mindurka.ui.RulesWrite;
+import mindurka.util.FormatException;
+import mindurka.util.Schematic;
+import mindustry.Vars;
 import mindustry.game.Rules;
 import mindustry.game.Team;
 import mindustry.maps.Map;
@@ -12,6 +19,31 @@ public class FortsPlotKindSquare extends FortsPlotKind {
     public static final String SHIFT_X = PREFIX+".shift_x";
     public static final String SHIFT_Y = PREFIX+".shift_y";
     public static final String DATA = PREFIX+".states";
+    public static boolean keyIsSchematic(String key) {
+        if (!key.startsWith(PREFIX+".schematic.")) return false;
+        int pos = PREFIX.length() + ".schematic.".length();
+        if (pos == key.length()) return false;
+
+        int idxs = key.length() - pos;
+
+        if (idxs > 3) return false;
+
+        if (idxs <= 2 && (key.charAt(pos) < '0' || key.charAt(pos) > '9')) return false;
+        else if (key.charAt(pos) < '1' || key.charAt(pos) > '2') return false;
+
+        if (idxs != 1 && key.charAt(pos) == '0') return false;
+
+        if (idxs >= 2 && (key.charAt(pos + 1) < '0' || key.charAt(pos + 1) > '9')) return false;
+        return idxs != 3 || (key.charAt(pos + 2) >= '0' && key.charAt(pos + 2) <= '9');
+    }
+    public static String keySchematic(Team team) {
+        return PREFIX+".schematic."+team.id;
+    }
+    public static Team keySchematicTeam(String key) {
+        if (!keyIsSchematic(key)) throw new IllegalArgumentException("Not a schematic key.");
+        int pos = PREFIX.length() + ".schematic.".length();
+        return Team.all[Strings.parseInt(key, 10, 0, pos, key.length())];
+    }
 
     public class Impl extends FortsPlotKind.Impl implements FortsPlotKindRectangular {
         protected Impl(RulesContext rc) {
@@ -27,6 +59,19 @@ public class FortsPlotKindSquare extends FortsPlotKind {
                 shiftX = read.r(SHIFT_X, 0);
                 shiftY = read.r(SHIFT_Y, 0);
                 plotStatesS = read.r(DATA, "");
+
+                for (String key : rules.tags.keys()) {
+                    if (!keyIsSchematic(key)) continue;
+                    Team team = keySchematicTeam(key);
+
+                    try {
+                        Schematic scheme = Schematic.of(rules.tags.get(key));
+                        if (scheme != Schematic.EMPTY) plotSchematic.put(team.id, scheme);
+                    } catch (FormatException e) {
+                        Vars.ui.showException("Failed to parse plot scheme for team " + team.coloredName(), e);
+                        Log.err("Failed to parse plot scheme for team " + team.id, e);
+                    }
+                }
             }
 
             plotStates = new FortsRectangularStates(size, size, wallsSize, shiftX, shiftY,
@@ -42,6 +87,11 @@ public class FortsPlotKindSquare extends FortsPlotKind {
 
             plotStates = new FortsRectangularStates(size, size, wallsSize, shiftX, shiftY,
                     rc.mapWidth, rc.mapHeight, plotStatesS);
+        }
+
+        @Override
+        public void onStart() {
+            plotStates.placeDefaultPlots(this::plotSchematic);
         }
 
         private int size;
@@ -82,6 +132,22 @@ public class FortsPlotKindSquare extends FortsPlotKind {
             return this;
         }
 
+        private final IntMap<Schematic> plotSchematic = new IntMap<>();
+        public Schematic plotSchematic(Team team) {
+            return plotSchematic.get(team.id, Schematic.EMPTY);
+        }
+        public Impl plotSchematic(Team team, Schematic value) {
+            if (value == null) {
+                rc.rules.tags.remove(keySchematic(team));
+                plotSchematic.remove(team.id);
+            }
+            else {
+                plotSchematic.put(team.id,  value);
+                try (TagWrite write = TagWrite.of(rc.rules)) { write.w(keySchematic(team), value); }
+            }
+            return this;
+        }
+
         private FortsRectangularStates plotStates;
 
         @Override
@@ -91,6 +157,7 @@ public class FortsPlotKindSquare extends FortsPlotKind {
             rc.rules.tags.remove(SHIFT_X);
             rc.rules.tags.remove(SHIFT_Y);
             rc.rules.tags.remove(DATA);
+            rc.rules.tags.keys().toSeq().each(FortsPlotKindSquare::keyIsSchematic, rc.rules.tags::remove);
         }
 
         @Override
@@ -99,6 +166,17 @@ public class FortsPlotKindSquare extends FortsPlotKind {
             write.i(WALLS_SIZE, this::wallsSize, this::wallsSize);
             write.i(SHIFT_X, this::shiftX, this::shiftX);
             write.i(SHIFT_Y, this::shiftY, this::shiftY);
+        }
+
+        @Override
+        public void writeTeamRules(Team team, RulesWrite write) {
+            write.button("rules.mindurka.forts.plot.schematic", () -> {
+                MVars.mapView.editorAction = new SchematicEditorAction(
+                        wallsSize() * 2 + size, wallsSize() * 2 + size, scheme -> {
+                    plotSchematic(team, scheme);
+                });
+                MVars.customRulesDialog.hide();
+            });
         }
 
         @Override

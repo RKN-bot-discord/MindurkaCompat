@@ -19,8 +19,10 @@ public abstract class FortsPlotKind {
         abstract void remove();
 
         public abstract void writeRules(RulesWrite write);
+        public abstract void writeTeamRules(Team team, RulesWrite write);
         public abstract void drawEditorGuides();
         public abstract void setPlotInfo(int x, int y, FortsPlotState state, Team team);
+        public abstract void onStart();
     }
 
     public abstract String name();
@@ -46,8 +48,10 @@ public abstract class FortsPlotKind {
                         return new Impl(rc) {
                             @Override void remove() {}
                             @Override public void writeRules(RulesWrite write) {}
+                            @Override public void writeTeamRules(Team team, RulesWrite write) {}
                             @Override public void drawEditorGuides() {}
                             @Override public void setPlotInfo(int x, int y, FortsPlotState state, Team team) {}
+                            @Override public void onStart() {}
                         };
                     }
                 },

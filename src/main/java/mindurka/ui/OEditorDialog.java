@@ -121,7 +121,7 @@ public class OEditorDialog extends MapEditorDialog {
                 Vars.logic.reset();
                 Vars.state.rules = new Rules();
                 editor.OBeginEdit(200, 200);
-            }
+            } else if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
             MVars.toolOptions.reset();
             MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
             shownWithMap = false;
@@ -484,8 +484,28 @@ public class OEditorDialog extends MapEditorDialog {
         }).margin(4).left().growX().fillX();
         blockOptions.row();
 
+        if (MVars.toolOptions.selectedBlock.isFloor() && !MVars.toolOptions.selectedBlock.isOverlay()) blockOptions.table(t -> {
+            t.label(() -> "@mindurka.floorasoverlays").left().pad(4f);
+
+            {
+                ImageButton button = new ImageButton(Vars.ui.getIcon("floors-as-overlays-off"), Styles.squareTogglei);
+                button.clicked(() -> MVars.toolOptions.floorsAsOverlays = false);
+                button.update(() -> button.setChecked(!MVars.toolOptions.floorsAsOverlays));
+                t.add(button).pad(4f).left().size(size, size).tooltip("@mindurka.floorasoverlays.floor");
+            }
+
+            {
+                ImageButton button = new ImageButton(Vars.ui.getIcon("floors-as-overlays-on"), Styles.squareTogglei);
+                button.clicked(() -> MVars.toolOptions.floorsAsOverlays = true);
+                button.update(() -> button.setChecked(MVars.toolOptions.floorsAsOverlays));
+                t.add(button).pad(4f).left().size(size, size).tooltip("@mindurka.floorasoverlays.overlay");
+            }
+
+            t.table().growX().fillX();
+        }).margin(4).left().growX().fillX().row();
+
         blockOptions.table(t -> {
-            t.label(() -> "Blend").left().pad(4f);
+            t.label(() -> "@mindurka.blend").left().pad(4f);
 
             for (Blend value : Blend.values()) {
                 ImageButton button = new ImageButton(Vars.ui.getIcon("blend-" + value.name()), Styles.squareTogglei);

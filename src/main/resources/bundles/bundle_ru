@@ -1,0 +1,106 @@
+rules.title.mindurka = Mindurka
+rules.title.advanced = Расширинные
+
+rules.mindurka.thor.enabled = Включить ториевый реактор
+rules.mindurka.thor.delay = Задержка перед активацией
+rules.mindurka.thor.cooldown = Время перезарядки
+rules.mindurka.thor.damageMultiplier = Множитель урона
+rules.mindurka.thor.radiusMultiplier = Множитель радиуса
+rules.mindurka.thor.block = Блок
+
+rules.mindurka.impact.enabled = Включить импульсный оеактор
+rules.mindurka.impact.delay = Задержка перед активацией
+rules.mindurka.impact.cooldown = Время перезарядки
+rules.mindurka.impact.duration = Продолжительность щита
+rules.mindurka.impact.explosionDamage = Урон от Взрыва
+rules.mindurka.impact.explosionRadius = Радиус Взрыва
+rules.mindurka.impact.instakill = Мгновенное убийство юнитов
+rules.mindurka.impact.block = Блок
+
+rules.mindurka.neoplasia.enabled = Включить неоплазменный реактор
+rules.mindurka.neoplasia.delay = Задержка перезарядки
+rules.mindurka.neoplasia.cooldown = Задержка между активациями
+rules.mindurka.neoplasia.progressSpeed = Скорость (блоки в секунду)
+rules.mindurka.neoplasia.damage = Урон за блок
+rules.mindurka.neoplasia.block = Блок
+
+rules.mindurka.enable_1va = Включить /1va 
+rules.mindurka.enable_vnw = Включить /vnw (пропуск волн)
+
+rules.mindurka.forts.plotKind.rect = Прямоугольник
+rules.mindurka.forts.plotKind.square = Квадрат
+rules.mindurka.forts.plotKind.freeform = Любая форма
+rules.mindurka.forts.plotKind.none = None
+
+rules.mindurka.forts.plot = Тип плота
+rules.mindurka.forts.plot.size = Размер плота
+rules.mindurka.forts.plot.width = Длинна плота
+rules.mindurka.forts.plot.height = Высота плота
+rules.mindurka.forts.plot.wall = Толщина стены
+rules.mindurka.forts.plot.shiftX = Отступ от 0 по X
+rules.mindurka.forts.plot.shiftY = Отсуп от 0 по Y
+rules.mindurka.forts.plot.schematic = Настроить схематику плота
+
+rules.instantbuild = Мгновенное строительство
+rules.possessionallowed = Разрежить вселение
+rules.staticfog = Статичесий туман
+rules.borderdarkness = Тёмный границы карты
+rules.cloudcolor = Цвед облаков
+rules.infiniteammo = Бексонечные снаряды
+rules.cheat = Чит режим
+# i dont sure this right translation
+rules.prebuildai = Преднастроенный ИИ 
+rules.cangameover = Возиможен конец игры
+rules.editor = Режимат редактора
+rules.alloweditrules = Разрешить изменение правил
+rules.allowenvironmentdeconstruct = Разрешить разрушение всех блоков
+# i dont know what de fuck is logic data
+rules.allowlogicdata = allow logic data
+
+rules.env = Окружение
+rules.env.terrestrial = На планете
+rules.env.space = Космос
+rules.env.underwater = Подводный
+rules.env.spores = Споры
+rules.env.scorching = Эрикер окружение
+rules.env.groundOil = Нефть под землёй
+rules.env.groundWater = Вода под землёй
+rules.env.oxygen = Есть кислород
+
+editor.mindurka.plotstate = Состояние плота
+
+mindurka.gamemode.none = None
+mindurka.gamemode.unknown = Any
+mindurka.gamemode.forts = Forts
+mindurka.gamemode.spvp = Sandbox PvP
+mindurka.gamemode.pvp = PvP
+mindurka.gamemode.castle = Castle Wars
+mindurka.gamemode.attack = Attack
+mindurka.gamemode.survival = Survival
+mindurka.gamemode.sandbox = Sandbox
+mindurka.gamemode.crawler = Crawler Arena
+mindurka.gamemode.tower = Tower Defense
+mindurka.gamemode.zombies = Zombies
+mindurka.gamemode.hub = Hub
+
+mindurka.blend = Смешивание текстур
+mindurka.floorasoverlays = Уровень наложения
+mindurka.floorasoverlays.floor = Пол
+mindurka.floorasoverlays.overlay = Отображение
+
+planet.gier.name = Gier
+planet.notva.name = Notva
+planet.tantros.name = Tantros
+planet.verilus.name = Verilus
+
+revealedblocks = Показанные блоки
+revealedunits = Показанные юниты
+hiddenblocks = Скрытые блоки
+hiddenunits = Скрытые юниты
+
+plotstate.disabled = Выключить плоты
+plotstate.enabled = Включить плоты
+plotstate.placed = Поставить плот
+plotstate.locked = Плот ставится пока команда не уничтожена
+plotstate.static = Статический плот
+plotstate.ghost = Недействительный плот

@@ -158,8 +158,6 @@ public class OEditorDialog extends MapEditorDialog {
         reloadMap = false;
         show();
         if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
-        Log.info("Restoring rules! (lastSavedRules=" + lastSavedRules + ")");
-        assert lastSavedRules != Vars.state.rules;
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
         lastSavedRules = null;
         // MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());

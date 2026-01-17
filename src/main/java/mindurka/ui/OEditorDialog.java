@@ -470,7 +470,7 @@ public class OEditorDialog extends MapEditorDialog {
         if (!MVars.toolOptions.tool.blockTool) return;
 
         blockOptions.table(t -> {
-            t.label(() -> "Brush size").left().pad(4f);
+            t.label(() -> "@editor.mindurka.brushsize").left().pad(4f);
 
             Slider slider = new Slider(1, 16, 1, false);
             slider.setValue(MVars.toolOptions.radius);
@@ -524,7 +524,7 @@ public class OEditorDialog extends MapEditorDialog {
             Table root = new Table();
             Table table = new Table();
 
-            root.label(() -> "Cliff sides").left().pad(4f);
+            root.label(() -> "@editor.mindurka.cliffsides").left().pad(4f);
             root.row();
             root.add(table).left().growX().fillX();
             table.defaults().size(size, size).pad(0).left();

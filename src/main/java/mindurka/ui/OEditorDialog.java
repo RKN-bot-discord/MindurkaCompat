@@ -168,6 +168,7 @@ public class OEditorDialog extends MapEditorDialog {
         menu.hide();
         Vars.ui.loadAnd(() -> {
             lastSavedRules = Vars.state.rules;
+            Vars.state.rules = new Rules();
             hide();
             //only reset the player; logic.reset() will clear entities, which we do not want
             Vars.state.teams = new Teams();

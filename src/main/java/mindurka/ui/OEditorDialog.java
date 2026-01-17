@@ -158,8 +158,11 @@ public class OEditorDialog extends MapEditorDialog {
         reloadMap = false;
         show();
         if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
+        Log.info("Restoring rules! (lastSavedRules=" + lastSavedRules + ")");
+        assert lastSavedRules != Vars.state.rules;
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
         lastSavedRules = null;
+        // MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         // saved = false;
         Reflect.invoke(EditorRenderer.class, editor.renderer, "recache", Util.noargs);
     }
@@ -168,12 +171,11 @@ public class OEditorDialog extends MapEditorDialog {
         menu.hide();
         Vars.ui.loadAnd(() -> {
             lastSavedRules = Vars.state.rules;
-            Vars.state.rules = new Rules();
             hide();
             //only reset the player; logic.reset() will clear entities, which we do not want
             Vars.state.teams = new Teams();
             Vars.player.reset();
-            Gamemode.editor.apply(Vars.state.rules);
+            Vars.state.rules = Gamemode.editor.apply(Vars.state.rules.copy());
             Vars.state.rules.limitMapArea = false;
             Vars.state.rules.sector = null;
             Vars.state.rules.fog = false;

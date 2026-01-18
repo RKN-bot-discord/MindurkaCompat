@@ -23,6 +23,7 @@ import arc.scene.ui.layout.Cell;
 import arc.scene.ui.layout.Table;
 import arc.struct.OrderedMap;
 import arc.struct.Seq;
+import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.Strings;
 import mindustry.Vars;

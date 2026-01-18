@@ -2,8 +2,12 @@ package mindurka.ui;
 
 import arc.files.Fi;
 import arc.graphics.Pixmap;
+import arc.struct.Seq;
 import arc.struct.StringMap;
+import arc.util.Log;
 import arc.util.Reflect;
+import mindurka.MVars;
+import mindurka.rules.Gamemode;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.editor.DrawOperation;
@@ -11,6 +15,7 @@ import mindustry.editor.EditorTile;
 import mindustry.editor.MapEditor;
 import mindustry.io.MapIO;
 import mindustry.maps.Map;
+import mindustry.mod.DataPatcher;
 import mindustry.world.Tile;
 import mindustry.world.Tiles;
 import mindustry.world.WorldContext;
@@ -68,6 +73,32 @@ public class OMapEditor extends MapEditor {
         }
         load(() -> MapIO.loadMap(map, context));
         renderer.resize(width(), height());
+
+        if (MVars.rules.gamemode() != null) {
+            a: {
+                if (Vars.state.patcher.patches.size == 0) break a;
+                DataPatcher.PatchSet patches = Vars.state.patcher.patches.first();
+                if (!patches.name.equals("Mindurka Default Patch")) break a;
+                Vars.state.patcher.patches.remove(0);
+            }
+
+            Gamemode.Impl gamemode = MVars.rules.gamemode();
+
+            try {
+                Seq<String> patches = Vars.state.patcher.patches.map(x -> x.patch);
+                b: if (gamemode != null) {
+                    String patch = gamemode.builtInContentPatch();
+                    if (patch == null) break b;
+                    patches.add("name: Mindurka Default Patch\n" + patch);
+                    Log.info("Should have applied a patch");
+                }
+                Vars.state.patcher.apply(patches);
+            } catch (Exception error) {
+                Log.err(error);
+                Vars.ui.showException(error);
+            }
+        }
+
         loading = false;
     }
 

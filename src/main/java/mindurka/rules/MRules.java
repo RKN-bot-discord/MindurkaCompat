@@ -1,12 +1,14 @@
 package mindurka.rules;
 
 import arc.Core;
+import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Nullable;
 import mindurka.MVars;
 import mindustry.Vars;
 import mindustry.game.Rules;
 import mindustry.maps.Map;
+import mindustry.mod.DataPatcher;
 
 // What I've learned:
 // - Fuck saving object allocations.
@@ -86,10 +88,17 @@ public class MRules {
     public @Nullable Gamemode.Impl gamemode() { return gamemode; }
     public @Nullable Gamemode gamemodeFactory() { return gamemode == null ? null : gamemode.factory(); }
     public MRules gamemode(@Nullable Gamemode newValue) {
-        if (gamemode != null) gamemode.remove();
+        a: {
+            if (Vars.state.patcher.patches.size == 0) break a;
+            DataPatcher.PatchSet patches = Vars.state.patcher.patches.first();
+            if (!patches.name.equals("Mindurka Default Patch")) break a;
+            Vars.state.patcher.patches.remove(0);
+        }
+
+        if (gamemode != null && (gamemode.factory() != newValue || !Core.input.shift())) gamemode.remove();
         if (newValue == null) remove();
         else {
-            gamemode = newValue.create(newRulesContext());
+            if (!Core.input.shift() || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());
@@ -97,6 +106,21 @@ public class MRules {
             if (!Core.input.shift()) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
+
+        try {
+            Seq<String> patches = Vars.state.patcher.patches.map(x -> x.patch);
+            b: if (gamemode != null) {
+                String patch = gamemode.builtInContentPatch();
+                if (patch == null) break b;
+                patches.add("name: Mindurka Default Patch\n" + patch);
+                Log.info("Should have applied a patch");
+            }
+            Vars.state.patcher.apply(patches);
+        } catch (Exception error) {
+            Log.err(error);
+            Vars.ui.showException(error);
+        }
+
         return this;
     }
 }

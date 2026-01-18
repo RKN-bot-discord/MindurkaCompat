@@ -75,7 +75,7 @@ public class Forts extends Gamemode {
 
                 thorEnabled = read.r(THOR_ENABLED, true);
                 thorDelay = read.r(THOR_DELAY, 0.25f);
-                thorCooldown = read.r(THOR_COOLDOWN, 0.5f);
+                thorCooldown = read.r(THOR_COOLDOWN, 0.75f);
                 thorDamageMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
                 thorRadiusMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
                 thorBlock = read.r(THOR_BLOCK, Blocks.thoriumReactor);
@@ -97,6 +97,7 @@ public class Forts extends Gamemode {
                 neoplasiaProgressSpeed = read.r(NEOPLASIA_PROGRESS_SPEED, 80f);
                 neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 750f);
                 neoplasiaBlock = read.r(NEOPLASIA_BLOCK, Blocks.neoplasiaReactor);
+                if (!neoplasiaBlock.rotate) impactBlock = Blocks.neoplasiaReactor;
             }
         }
 
@@ -392,6 +393,8 @@ public class Forts extends Gamemode {
             rules.tags.remove(NEOPLASIA_BLOCK);
 
             rules.tags.remove(ENABLE_1VA);
+
+            plotKind.remove();
         }
 
         @Override
@@ -423,7 +426,7 @@ public class Forts extends Gamemode {
             rules.unitHealthMultiplier = 1f;
             rules.attackMode = false;
             rules.possessionAllowed = false;
-            rules.enemyCoreBuildRadius = 30f;
+            rules.enemyCoreBuildRadius = 30f * Vars.tilesize;
             rules.schematicsAllowed = false;
             rules.loadout.clear();
             rules.loadout.add(ItemStack.with(
@@ -518,22 +521,24 @@ public class Forts extends Gamemode {
         public String builtInContentPatch() {
             return
                     "block.scrap-wall.alwaysReplace: true\n" +
-                            "unit.poly.health: 90\n" +
-                            "unit.flare.health: 150\n" +
-                            "block.cyclone.ammoTypes: {\n" +
-                            "    metaglass.splashDamage: 65\n" +
-                            "    blast-compound.splashDamage: 100\n" +
-                            "    plastanium.splashDamage: 95\n" +
-                            "    surge-alloy.splashDamage: 125\n" +
-                            "}\n" +
-                            "block.titam.ammoTypes.thorium: {\n" +
-                            "    buildingDamageMultiplier: 0.01\n" +
-                            "    damage: 200\n" +
-                            "    splashDamage: 800\n" +
-                            "    splashDamagePierce: true\n" +
-                            "    splashDamageRadius: 80\n" +
-                            "}\n" +
-                            "block.oxidation-chamber.canOverdrive: true\n";
+                    "unit.poly.health: 90\n" +
+                    "unit.flare.health: 150\n" +
+                    "block.cyclone.ammoTypes: {\n" +
+                    "    metaglass.splashDamage: 65\n" +
+                    "    blast-compound.splashDamage: 100\n" +
+                    "    plastanium.splashDamage: 95\n" +
+                    "    surge-alloy.splashDamage: 125\n" +
+                    "}\n" +
+                    "block.titan.ammoTypes.thorium: {\n" +
+                    "    buildingDamageMultiplier: 0.01\n" +
+                    "    damage: 200\n" +
+                    "    splashDamage: 800\n" +
+                    "    splashDamagePierce: true\n" +
+                    "    splashDamageRadius: 80\n" +
+                    "}\n" +
+                    "block.oxidation-chamber.canOverdrive: true\n" +
+                    "block.thorium-reactor.health: 10\n" +
+                    "block.neoplasia-reactor.health: 10\n";
         }
     }
 }

@@ -1,8 +1,6 @@
 package mindurka.rules;
 
-import arc.struct.IntMap;
 import mindurka.ui.RulesWrite;
-import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;

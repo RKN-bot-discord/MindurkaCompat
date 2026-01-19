@@ -1,8 +1,6 @@
 package mindurka.util;
 
 import arc.struct.Seq;
-import arc.util.Buffers;
-import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -14,7 +12,6 @@ import mindustry.world.Tile;
 import mindustry.world.Tiles;
 import mindustry.world.blocks.environment.Floor;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 public class Schematic {
@@ -189,7 +186,7 @@ public class Schematic {
 
             try { if (!read.nil()) {
                 Block block = blocks[read.i()];
-                if (!block.isOverlay() && block != Blocks.air) throw new FormatException("Not an overlay (" + block.name + ")");
+                if (!block.isFloor() && block != Blocks.air) throw new FormatException("Not an overlay (" + block.name + ")");
                 scheme.overlays[cursor] = block.asFloor();
             } } catch (ArrayIndexOutOfBoundsException e) {
                 throw new FormatException("Invalid block index", e);

@@ -129,6 +129,7 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.neoplasia.delay", this::neoplasiaDelay, this::neoplasiaDelay).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.cooldown", this::neoplasiaCooldown, this::neoplasiaCooldown).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.progressSpeed", this::neoplasiaProgressSpeed, this::neoplasiaProgressSpeed).enabled(this::neoplasiaEnabled).min(0);
+            write.f("rules.mindurka.neoplasia.length", this::neoplasiaLength, this::neoplasiaLength).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.damage", this::neoplasiaDamage, this::neoplasiaDamage).enabled(this::neoplasiaEnabled).min(0);
             write.block("rules.mindurka.neoplasia.block", this::neoplasiaBlock, this::neoplasiaBlock).enabled(this::neoplasiaEnabled).filter(block -> block.rotate && !block.isFloor());
             write.spacer();

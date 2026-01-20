@@ -72,10 +72,10 @@ public class Forts extends Gamemode {
                 enableVnw = read.r(ENABLE_VNW, false);
 
                 thorEnabled = read.r(THOR_ENABLED, true);
-                thorDelay = read.r(THOR_DELAY, 0.25f);
+                thorDelay = read.r(THOR_DELAY, 0.5f);
                 thorCooldown = read.r(THOR_COOLDOWN, 0.75f);
                 thorDamageMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
-                thorRadiusMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
+                thorRadiusMultiplier = read.r(THOR_RADIUS_MULTIPLIER, 1f);
                 thorBlock = read.r(THOR_BLOCK, Blocks.thoriumReactor);
 
                 impactEnabled = read.r(IMPACT_ENABLED, true);
@@ -311,7 +311,7 @@ public class Forts extends Gamemode {
         }
 
         private boolean neoplasiaEnabled;
-        public boolean neoplasiaEnabled() { return impactEnabled; }
+        public boolean neoplasiaEnabled() { return neoplasiaEnabled; }
         public Impl neoplasiaEnabled(boolean value) {
             neoplasiaEnabled = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_ENABLED, value); }

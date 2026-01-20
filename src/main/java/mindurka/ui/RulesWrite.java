@@ -22,6 +22,7 @@ import arc.scene.ui.ImageButton;
 import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
+import arc.scene.ui.layout.Stack;
 import arc.scene.ui.layout.Table;
 import arc.struct.OrderedMap;
 import arc.struct.Seq;
@@ -386,29 +387,45 @@ public class RulesWrite {
         if (!shouldAdd(tlKey)) return new BlockCtl();
 
         BlockCtl ctl = new BlockCtl();
+        final Table[] table = new Table[1];
 
-        root.table(t -> {
-            t.left();
-            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
-                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
-            final ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNonei);
-            button.getStyle().imageUp = new TextureRegionDrawable(def.get().uiIcon);
-            button.resizeImage(32f);
-            button.setSize(32f, 32f);
-            button.update(() -> {
-                button.setDisabled(!ctl.enabled.get());
-                button.setChecked(false);
-            });
-            button.clicked(() -> {
-                BlockSelectDialog dialog = new BlockSelectDialog(tlKey);
-                dialog.show(ctl.filter, block -> {
-                    onClick.get(block);
-                    button.getStyle().imageUp = new TextureRegionDrawable(block.uiIcon);
-                    button.resizeImage(32f);
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.alphaBg), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setDisabled(!ctl.enabled.get());
+                    b.setChecked(false);
                 });
-            });
-            t.add(button).left();
-        }).left().padLeft(6).row();
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new BlockSelectDialog("@" + tlKey).show(ctl.filter, block -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(block.uiIcon, 4f / Math.min(block.uiIcon.width, block.uiIcon.height)));
+            onClick.get(block);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        // root.table(t -> {
+        //     t.left();
+        //     t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+        //             .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+        //     final ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNonei);
+        //     button.getStyle().imageUp = new TextureRegionDrawable(def.get().uiIcon);
+        //     button.resizeImage(32f);
+        //     button.setSize(32f, 32f);
+        //     button.update(() -> {
+        //         button.setDisabled(!ctl.enabled.get());
+        //         button.setChecked(false);
+        //     });
+        //     button.clicked(() -> {
+        //         BlockSelectDialog dialog = new BlockSelectDialog("@" + tlKey);
+        //         dialog.show(ctl.filter, block -> {
+        //             onClick.get(block);
+        //             button.getStyle().imageUp = new TextureRegionDrawable(block.uiIcon);
+        //             button.resizeImage(32f);
+        //         }, def.get());
+        //     });
+        //     t.add(button).left();
+        // }).left().padLeft(6).row();
 
         return ctl;
     }

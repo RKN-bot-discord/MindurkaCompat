@@ -14,9 +14,11 @@ import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
 import arc.scene.style.TextureRegionDrawable;
+import arc.scene.ui.Button;
 import arc.scene.ui.ButtonGroup;
 import arc.scene.ui.CheckBox;
 import arc.scene.ui.Image;
+import arc.scene.ui.ImageButton;
 import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
 import arc.scene.ui.layout.Cell;
@@ -34,6 +36,7 @@ import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.ui.Styles;
+import mindustry.world.Block;
 
 /**
  * Utility class for writing rules.
@@ -364,6 +367,50 @@ public class RulesWrite {
             if (dataList.containsKey(team)) continue;
             dataList.put(team, new TeamData(team));
         }
+    }
+
+    public static class BlockCtl {
+        private Boolp enabled = TRUE;
+        private Boolf<Block> filter = block -> true;
+
+        public BlockCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+        public BlockCtl filter(Boolf<Block> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public BlockCtl block(String tlKey, Cons<Block> onClick, Prov<Block> def) {
+        if (!shouldAdd(tlKey)) return new BlockCtl();
+
+        BlockCtl ctl = new BlockCtl();
+
+        root.table(t -> {
+            t.left();
+            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            final ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNonei);
+            button.getStyle().imageUp = new TextureRegionDrawable(def.get().uiIcon);
+            button.resizeImage(32f);
+            button.setSize(32f, 32f);
+            button.update(() -> {
+                button.setDisabled(!ctl.enabled.get());
+                button.setChecked(false);
+            });
+            button.clicked(() -> {
+                BlockSelectDialog dialog = new BlockSelectDialog(tlKey);
+                dialog.show(ctl.filter, block -> {
+                    onClick.get(block);
+                    button.getStyle().imageUp = new TextureRegionDrawable(block.uiIcon);
+                    button.resizeImage(32f);
+                });
+            });
+            t.add(button).left();
+        }).left().padLeft(6).row();
+
+        return ctl;
     }
 
     public void spacer() {

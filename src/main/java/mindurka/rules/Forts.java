@@ -112,6 +112,7 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.thor.cooldown", this::thorCooldown, this::thorCooldown).enabled(this::thorEnabled).min(0);
             write.f("rules.mindurka.thor.damageMultiplier", this::thorDamageMultiplier, this::thorDamageMultiplier).enabled(this::thorEnabled).min(0);
             write.f("rules.mindurka.thor.radiusMultiplier", this::thorRadiusMultiplier, this::thorRadiusMultiplier).enabled(this::thorEnabled).min(0);
+            write.block("rules.mindurka.thor.block", this::thorBlock, this::thorBlock).enabled(this::thorEnabled).filter(block -> !block.isFloor());
             write.spacer();
 
             write.b("rules.mindurka.impact.enabled", this::impactEnabled, this::impactEnabled);
@@ -121,6 +122,7 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.impact.explosionDamage", this::impactExplosionDamage, this::impactExplosionDamage).enabled(this::impactEnabled).min(0);
             write.f("rules.mindurka.impact.explosionRadius", this::impactExplosionRadius, this::impactExplosionRadius).enabled(this::impactEnabled).min(0);
             write.b("rules.mindurka.impact.instakill", this::impactInstakill, this::impactInstakill).enabled(this::impactEnabled);
+            write.block("rules.mindurka.impact.block", this::impactBlock, this::impactBlock).enabled(this::impactEnabled).filter(block -> block.size == 4 && !block.isFloor());
             write.spacer();
 
             write.b("rules.mindurka.neoplasia.enabled", this::neoplasiaEnabled, this::neoplasiaEnabled);
@@ -128,6 +130,7 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.neoplasia.cooldown", this::neoplasiaCooldown, this::neoplasiaCooldown).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.progressSpeed", this::neoplasiaProgressSpeed, this::neoplasiaProgressSpeed).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.damage", this::neoplasiaDamage, this::neoplasiaDamage).enabled(this::neoplasiaEnabled).min(0);
+            write.block("rules.mindurka.neoplasia.block", this::neoplasiaBlock, this::neoplasiaBlock).enabled(this::neoplasiaEnabled).filter(block -> block.rotate && !block.isFloor());
             write.spacer();
 
             Runnable[] refreshPlotKindRules = new Runnable[1];
@@ -443,6 +446,7 @@ public class Forts extends Gamemode {
                     Blocks.heatReactor
             );
             rules.bannedBlocks.addAll(
+                    Blocks.diode,
                     Blocks.cryofluidMixer,
                     Blocks.surgeWall,
                     Blocks.surgeWallLarge,

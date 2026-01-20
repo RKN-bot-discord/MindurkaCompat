@@ -167,10 +167,10 @@ public class FortsPlotKindSquare extends FortsPlotKind {
 
         @Override
         public void writeRules(RulesWrite write) {
-            write.i(SIZE, this::size, this::size);
-            write.i(WALLS_SIZE, this::wallsSize, this::wallsSize);
-            write.i(SHIFT_X, this::shiftX, this::shiftX);
-            write.i(SHIFT_Y, this::shiftY, this::shiftY);
+            write.i("rules.mindurka.forts.plot.size", this::size, this::size);
+            write.i("rules.mindurka.forts.plot.wall", this::wallsSize, this::wallsSize);
+            write.i("rules.mindurka.forts.plot.shiftX", this::shiftX, this::shiftX);
+            write.i("rules.mindurka.forts.plot.shiftY", this::shiftY, this::shiftY);
         }
 
         @Override

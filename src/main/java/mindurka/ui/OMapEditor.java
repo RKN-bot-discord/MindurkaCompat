@@ -78,7 +78,9 @@ public class OMapEditor extends MapEditor {
             a: {
                 if (Vars.state.patcher.patches.size == 0) break a;
                 DataPatcher.PatchSet patches = Vars.state.patcher.patches.first();
+                Log.info("Patch name: " + patches.name);
                 if (!patches.name.equals("Mindurka Default Patch")) break a;
+                Log.info("Removed patch!");
                 Vars.state.patcher.patches.remove(0);
             }
 
@@ -89,7 +91,7 @@ public class OMapEditor extends MapEditor {
                 b: if (gamemode != null) {
                     String patch = gamemode.builtInContentPatch();
                     if (patch == null) break b;
-                    patches.add("name: Mindurka Default Patch\n" + patch);
+                    patches.insert(0, "name: Mindurka Default Patch\n" + patch);
                     Log.info("Should have applied a patch");
                 }
                 Vars.state.patcher.apply(patches);

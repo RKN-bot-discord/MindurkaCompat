@@ -238,30 +238,7 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         }, team -> team.data().cores.size != 0);
 
         write = writeRoot.category("mindurka");
-        {
-            final Runnable[] extra = new Runnable[1];
-
-            write.selection("rules.title.mindurka", addItem -> {
-                addItem.add("mindurka.gamemode.none", null);
-                for (String gamemodeName : Gamemode.keys()) {
-                    Gamemode gamemode = Gamemode.forName(gamemodeName);
-                    addItem.add("mindurka.gamemode." + gamemodeName, gamemode);
-                }
-            }, value -> {
-                MVars.rules.gamemode(value);
-                extra[0].run();
-            }, MVars.rules.gamemodeFactory());
-
-            {
-                RulesWrite extraWrite = write.table();
-                extra[0] = () -> {
-                    extraWrite.clear();
-                    @Nullable Gamemode.Impl gamemode = MVars.rules.gamemode();
-                    if (gamemode != null) gamemode.writeGamemodeRules(extraWrite);
-                };
-                extra[0].run();
-            }
-        }
+        MVars.rules.writeRules(write);
 
         write = writeRoot.category("advanced");
         write.b("rules.cangameover", () -> rules.canGameOver, b -> rules.canGameOver = b);

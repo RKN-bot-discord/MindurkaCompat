@@ -1,5 +1,7 @@
 package mindurka;
 
+import arc.util.io.Streams;
+
 public class Util {
     private Util() {}
 

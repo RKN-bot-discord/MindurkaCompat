@@ -5,6 +5,7 @@ import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Nullable;
 import mindurka.MVars;
+import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.game.Rules;
 import mindustry.maps.Map;
@@ -28,6 +29,7 @@ public class MRules {
     public static final String GAMEMODE = PREFIX+".gamemode";
     public static final String GAMEMODE_LEGACY = "mindurkaGamemode"; // Does not use `mdrk.*` convention as it's a legacy key.
                                                                      // But it's a great legacy, so we depend on it.
+    public static final String OVERDRIVE_IGNORES_CHEAT = PREFIX+".overdriveIgnoresCheat";
 
     private final Rules rules;
     private final int mapWidth, mapHeight;
@@ -49,6 +51,8 @@ public class MRules {
             }
         }
 
+        RulesContext rc = newRulesContext();
+
         {
             @Nullable String gamemodeName = rules.tags.get(GAMEMODE);
             if (gamemodeName == null) {
@@ -62,9 +66,13 @@ public class MRules {
             @Nullable Gamemode factory = Gamemode.forName(gamemodeName);
             if (factory == null) {
                 Log.err("Unknown gamemode '" + gamemodeName + "', some features may not be supported.");
-                gamemode = Gamemode.UNKNOWN.create(newRulesContext());
+                gamemode = Gamemode.UNKNOWN.create(rc);
             }
-            else gamemode = factory.create(newRulesContext());
+            else gamemode = factory.create(rc);
+        }
+
+        try (TagRead read = TagRead.of(rc.rules)) {
+            overdriveIgnoresCheat = read.r(OVERDRIVE_IGNORES_CHEAT, false);
         }
     }
 
@@ -77,6 +85,7 @@ public class MRules {
         rules.tags.remove(GAMEMODE);
         rules.tags.remove(GAMEMODE_LEGACY);
         rules.tags.remove(PATCH);
+        rules.tags.remove(OVERDRIVE_IGNORES_CHEAT);
 
         if (gamemode != null) {
             gamemode.remove();
@@ -91,9 +100,7 @@ public class MRules {
         a: {
             if (Vars.state.patcher.patches.size == 0) break a;
             DataPatcher.PatchSet patches = Vars.state.patcher.patches.first();
-            Log.info("Patch name: " + patches.name);
             if (!patches.name.equals("Mindurka Default Patch")) break a;
-            Log.info("Removed patch!");
             Vars.state.patcher.patches.remove(0);
         }
 
@@ -115,7 +122,6 @@ public class MRules {
                 String patch = gamemode.builtInContentPatch();
                 if (patch == null) break b;
                 patches.insert(0, "name: Mindurka Default Patch\n" + patch);
-                Log.info("Should have applied a patch");
             }
             Vars.state.patcher.apply(patches);
         } catch (Exception error) {
@@ -123,6 +129,47 @@ public class MRules {
             Vars.ui.showException(error);
         }
 
+        return this;
+    }
+
+    public void writeRules(RulesWrite write) {
+        write.b("rules.mindurka.overdriveignorescheat", this::overdriveIgnoresCheat, this::overdriveIgnoresCheat);
+
+        {
+            final Runnable[] extra = new Runnable[1];
+
+            write.selection("rules.title.mindurka", addItem -> {
+                addItem.add("mindurka.gamemode.none", null);
+                for (String gamemodeName : Gamemode.keys()) {
+                    Gamemode gamemode = Gamemode.forName(gamemodeName);
+                    addItem.add("mindurka.gamemode." + gamemodeName, gamemode);
+                }
+            }, value -> {
+                MVars.rules.gamemode(value);
+                extra[0].run();
+            }, MVars.rules.gamemodeFactory());
+
+            {
+                RulesWrite extraWrite = write.table();
+                extra[0] = () -> {
+                    extraWrite.clear();
+                    @Nullable Gamemode.Impl gamemode = MVars.rules.gamemode();
+                    if (gamemode != null) gamemode.writeGamemodeRules(extraWrite);
+                };
+                extra[0].run();
+            }
+        }
+    }
+
+    private boolean overdriveIgnoresCheat;
+    public boolean overdriveIgnoresCheat() {
+        if (gamemode == null) return false;
+        return overdriveIgnoresCheat;
+    }
+    public MRules overdriveIgnoresCheat(boolean value) {
+        if (gamemode == null) return this;
+        overdriveIgnoresCheat = value;
+        try (TagWrite write = TagWrite.of(rules)) { write.w(OVERDRIVE_IGNORES_CHEAT, value); }
         return this;
     }
 }

@@ -10,12 +10,14 @@ public class MVars {
 
     public static MRules rules;
 
+    public static final int version = 2;
     public static MapView oldMapView;
     public static OMapView mapView;
     public static OMapEditor mapEditor;
     public static OEditorDialog editorDialog;
     public static OCustomRulesDialog customRulesDialog;
     public static ToolOptions toolOptions = new ToolOptions();
+    public static Protocol protocol = new Protocol();
 
     private static BitMap mapbits = null;
     public static BitMap mapbits() {

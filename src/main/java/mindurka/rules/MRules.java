@@ -8,7 +8,6 @@ import mindurka.MVars;
 import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.game.Rules;
-import mindustry.maps.Map;
 import mindustry.mod.DataPatcher;
 
 // What I've learned:
@@ -25,7 +24,6 @@ public class MRules {
     // Used
     public static final String PATCH = PREFIX+".patch";
     public static final String FORMAT_VER = "1";
-    public static final String PATCH_VER = "1";
     public static final String GAMEMODE = PREFIX+".gamemode";
     public static final String GAMEMODE_LEGACY = "mindurkaGamemode"; // Does not use `mdrk.*` convention as it's a legacy key.
                                                                      // But it's a great legacy, so we depend on it.
@@ -111,7 +109,7 @@ public class MRules {
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());
-            rules.tags.put(PATCH, PATCH_VER);
+            rules.tags.put(PATCH, MVars.version + "");
             if (!Core.input.shift()) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();

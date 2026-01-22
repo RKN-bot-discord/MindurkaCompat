@@ -51,4 +51,26 @@ public class Util {
         if (x < 0) x = x + a;
         return x;
     }
+
+    public interface Yeet<T> {
+        T run() throws Exception;
+    }
+    public static <T> T yeet(Yeet<T> fn) {
+        try {
+            return fn.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Yeet!", e);
+        }
+    }
+
+    public interface YeetV {
+        void run() throws Exception;
+    }
+    public static void yeet(YeetV fn) {
+        try {
+            fn.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Yeet!", e);
+        }
+    }
 }

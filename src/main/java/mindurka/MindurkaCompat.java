@@ -28,7 +28,5 @@ public class MindurkaCompat {
             MIcons.load();
             Injects.load();
         });
-
-        // TODO: Packet bullshit (i.e. fill).
     }
 }

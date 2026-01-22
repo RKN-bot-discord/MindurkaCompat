@@ -2,13 +2,13 @@ package mindurka;
 
 import arc.Core;
 import arc.func.Cons;
-import arc.func.Cons2;
 import arc.func.Prov;
 import arc.struct.ObjectIntMap;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.Log;
 import arc.util.Reflect;
+import arc.util.Timer;
 import arc.util.io.Reads;
 import arc.util.io.ReusableByteOutStream;
 import mindustry.Vars;
@@ -16,9 +16,7 @@ import mindustry.core.NetClient;
 import mindustry.core.Version;
 import mindustry.gen.Call;
 import mindustry.gen.ClientBinaryPacketReliableCallPacket;
-import mindustry.net.ArcNetProvider;
 import mindustry.net.Net;
-import mindustry.net.NetConnection;
 import mindustry.net.Packet;
 import mindustry.net.Packets;
 
@@ -36,6 +34,14 @@ import java.util.Locale;
 
 public class Protocol {
     private static final byte[] AUTH_HEADER = new byte[] { 43, 76, 12, 45 };
+
+    private static class BoolBox {
+        boolean value;
+    }
+
+    final BoolBox syncObject = new BoolBox();
+    boolean complete;
+    KeyPair pair = null;
 
     private static class OClientBinaryPacketReliable extends ClientBinaryPacketReliableCallPacket {
         @Override
@@ -61,6 +67,7 @@ public class Protocol {
         }
     }
 
+    private static final String encryptionScheme = "RSA";
     private static final ReusableByteOutStream byteStream = new ReusableByteOutStream(1024);
     private static final DataOutputStream dataStream = new DataOutputStream(byteStream);
 
@@ -111,7 +118,8 @@ public class Protocol {
 
                 KeyPair pair = keyPair();
 
-                byte[] publicKey = new X509EncodedKeySpec(pair.getPublic().getEncoded()).getEncoded();
+                KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance(encryptionScheme));
+                byte[] publicKey = Util.yeet(() -> factory.getKeySpec(pair.getPublic(), X509EncodedKeySpec.class)).getEncoded();
                 Util.yeet(() -> dataStream.writeShort(publicKey.length));
                 Util.yeet(() -> dataStream.write(publicKey));
 
@@ -155,7 +163,7 @@ public class Protocol {
                 dataStream.close();
                 byte[] body = byteStream.toByteArray();
 
-                Cipher cipher = Cipher.getInstance("RSA");
+                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
                 cipher.init(Cipher.ENCRYPT_MODE, keyPair().getPrivate());
                 byte[] encryptedBody = cipher.doFinal(body);
 
@@ -187,6 +195,7 @@ public class Protocol {
                 dataStream.writeInt(Vars.player.color.rgba());
                 dataStream.writeUTF(Reflect.invoke(NetClient.class, Vars.netClient, "getUsid", new Object[] { addressTCP }, String.class));
                 dataStream.writeUTF(uuid);
+                dataStream.writeUTF(locale);
                 dataStream.close();
 
                 Call.serverBinaryPacketReliable("mindurka.verifyKey", byteStream.toByteArray());
@@ -196,37 +205,71 @@ public class Protocol {
                 Vars.netClient.disconnectQuietly();
             }
         });
+
+        prepareKeys();
     }
 
-    public KeyPair keyPair() {
+    private void prepareKeys() {
         byte[] pubkeyBytes = Core.settings.getBytes("mindurka.certRSApub");
         byte[] privkeyBytes = Core.settings.getBytes("mindurka.certRSApriv");
 
         if (pubkeyBytes == null || privkeyBytes == null) {
-            KeyPairGenerator gen = Util.yeet(() -> KeyPairGenerator.getInstance("RSA"));
-            gen.initialize(4096);
-            KeyPair pair = gen.generateKeyPair();
-
-            Core.settings.put("mindurka.certRSApub", new X509EncodedKeySpec(pair.getPublic().getEncoded()).getEncoded());
-            Core.settings.put("mindurka.certRSApriv", new PKCS8EncodedKeySpec(pair.getPrivate().getEncoded()).getEncoded());
-
-            return pair;
+            generateKeyAsync();
+            return;
         }
 
-        KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance("RSA"));
+        KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance(encryptionScheme));
 
         try {
-            return new KeyPair(factory.generatePublic(new X509EncodedKeySpec(pubkeyBytes)), factory.generatePrivate(new PKCS8EncodedKeySpec(privkeyBytes)));
+            pair = new KeyPair(factory.generatePublic(new X509EncodedKeySpec(pubkeyBytes)), factory.generatePrivate(new PKCS8EncodedKeySpec(privkeyBytes)));
+            Log.info(pair.getPublic().getFormat());
+            Log.info(pair.getPublic().getAlgorithm());
+            complete = true;
         } catch (InvalidKeySpecException e) {
             Vars.ui.showException("Failed to parse saved key", e);
-            KeyPairGenerator gen = Util.yeet(() -> KeyPairGenerator.getInstance("RSA"));
-            gen.initialize(4096);
-            KeyPair pair = gen.generateKeyPair();
-
-            Core.settings.put("mindurka.certRSApub", new X509EncodedKeySpec(pair.getPublic().getEncoded()).getEncoded());
-            Core.settings.put("mindurka.certRSApriv", new PKCS8EncodedKeySpec(pair.getPrivate().getEncoded()).getEncoded());
-
-            return pair;
+            generateKeyAsync();
         }
+    }
+
+    private void generateKeyAsync() {
+        synchronized (syncObject) {
+            syncObject.value = true;
+        }
+
+        new Thread(this::generateKeyThread, "Keygen thread").start();
+
+        final Timer.Task[] task = new Timer.Task[1];
+        task[0] = Timer.schedule(() -> {
+            synchronized (syncObject) {
+                if (!syncObject.value) return;
+            }
+
+            Log.info(pair.getPublic().getFormat());
+            Log.info(pair.getPublic().getAlgorithm());
+
+            KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance(encryptionScheme));
+
+            Core.settings.put("mindurka.certRSApub", Util.yeet(() -> factory.getKeySpec(pair.getPublic(), X509EncodedKeySpec.class)).getEncoded());
+            Core.settings.put("mindurka.certRSApriv", Util.yeet(() -> factory.getKeySpec(pair.getPublic(), PKCS8EncodedKeySpec.class)).getEncoded());
+
+            task[0].cancel();
+            complete = true;
+        }, 0.5f, 0.5f);
+    }
+
+    private void generateKeyThread() {
+        KeyPairGenerator gen = Util.yeet(() -> KeyPairGenerator.getInstance(encryptionScheme));
+        gen.initialize(4096);
+        KeyPair pair = gen.generateKeyPair();
+
+        synchronized (syncObject) {
+            this.pair = pair;
+            syncObject.value = false;
+        }
+    }
+
+    public KeyPair keyPair() {
+        if (!complete) throw new IllegalStateException("Keys are still generating!");
+        return pair;
     }
 }

@@ -47,19 +47,15 @@ public class Protocol {
 
         @Override
         public int getPriority() {
-            Log.info("Checking priority of '" + type + "': " + MVars.protocol.passThroughPackets.containsKey(type));
             if (MVars.protocol.passThroughPackets.containsKey(type)) return Packet.priorityHigh;
             return super.getPriority();
         }
 
         @Override
         public void handleClient() {
-            Log.info("Forwarding " + type);
-
             super.handleClient();
 
             Cons<byte[]> cons = MVars.protocol.passThroughPackets.get(type);
-            Log.info("Has handler? " + (cons != null));
             if (cons == null) return;
             cons.get(contents);
         }
@@ -144,7 +140,6 @@ public class Protocol {
         });
 
         passThroughPackets.put("mindurka.confirmConnect", packet -> {
-            Log.info("mindurka.confirmConnect...");
             try {
                 DataInputStream stream = new DataInputStream(new ByteArrayInputStream(packet));
 

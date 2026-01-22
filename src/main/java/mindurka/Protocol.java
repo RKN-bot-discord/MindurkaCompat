@@ -180,6 +180,7 @@ public class Protocol {
                 byteStream.reset();
                 dataStream.writeShort(encryptedBody.length);
                 dataStream.write(encryptedBody);
+                dataStream.writeInt(MVars.version);
                 dataStream.writeUTF(Vars.player.name);
                 {
                     Seq<String> strings = Vars.mods.getModStrings();

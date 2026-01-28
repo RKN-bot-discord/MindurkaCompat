@@ -36,11 +36,10 @@ public class Protocol {
     private static final byte[] AUTH_HEADER = new byte[] { 43, 76, 12, 45 };
 
     private static class BoolBox {
-        boolean value;
+        KeyPair newPair = null;
     }
 
     final BoolBox syncObject = new BoolBox();
-    boolean complete;
     KeyPair pair = null;
 
     private static class OClientBinaryPacketReliable extends ClientBinaryPacketReliableCallPacket {
@@ -224,7 +223,6 @@ public class Protocol {
             pair = new KeyPair(factory.generatePublic(new X509EncodedKeySpec(pubkeyBytes)), factory.generatePrivate(new PKCS8EncodedKeySpec(privkeyBytes)));
             Log.info(pair.getPublic().getFormat());
             Log.info(pair.getPublic().getAlgorithm());
-            complete = true;
         } catch (InvalidKeySpecException e) {
             Vars.ui.showException("Failed to parse saved key", e);
             generateKeyAsync();
@@ -232,16 +230,13 @@ public class Protocol {
     }
 
     private void generateKeyAsync() {
-        synchronized (syncObject) {
-            syncObject.value = true;
-        }
-
         new Thread(this::generateKeyThread, "Keygen thread").start();
 
         final Timer.Task[] task = new Timer.Task[1];
         task[0] = Timer.schedule(() -> {
             synchronized (syncObject) {
-                if (!syncObject.value) return;
+                if (syncObject.newPair == null) return;
+                pair = syncObject.newPair;
             }
 
             Log.info(pair.getPublic().getFormat());
@@ -250,10 +245,9 @@ public class Protocol {
             KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance(encryptionScheme));
 
             Core.settings.put("mindurka.certRSApub", Util.yeet(() -> factory.getKeySpec(pair.getPublic(), X509EncodedKeySpec.class)).getEncoded());
-            Core.settings.put("mindurka.certRSApriv", Util.yeet(() -> factory.getKeySpec(pair.getPublic(), PKCS8EncodedKeySpec.class)).getEncoded());
+            Core.settings.put("mindurka.certRSApriv", Util.yeet(() -> factory.getKeySpec(pair.getPrivate(), PKCS8EncodedKeySpec.class)).getEncoded());
 
             task[0].cancel();
-            complete = true;
         }, 0.5f, 0.5f);
     }
 
@@ -263,13 +257,12 @@ public class Protocol {
         KeyPair pair = gen.generateKeyPair();
 
         synchronized (syncObject) {
-            this.pair = pair;
-            syncObject.value = false;
+            syncObject.newPair = pair;
         }
     }
 
     public KeyPair keyPair() {
-        if (!complete) throw new IllegalStateException("Keys are still generating!");
+        if (pair == null) throw new IllegalStateException("Keys are still generating!");
         return pair;
     }
 }

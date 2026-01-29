@@ -11,6 +11,7 @@ import arc.util.Reflect;
 import arc.util.Timer;
 import arc.util.io.Reads;
 import arc.util.io.ReusableByteOutStream;
+import arc.util.serialization.Base64Coder;
 import mindustry.Vars;
 import mindustry.core.NetClient;
 import mindustry.core.Version;
@@ -31,6 +32,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Locale;
+import java.util.zip.CRC32;
 
 public class Protocol {
     private static final byte[] AUTH_HEADER = new byte[] { 43, 76, 12, 45 };
@@ -126,6 +128,14 @@ public class Protocol {
                 Call.serverBinaryPacketReliable("mindurka.connect", byteStream.getBytes());
             }
 
+            String uuid = Vars.platform.getUUID();
+            if (uuid == null) {
+                Vars.ui.showErrorMessage("@invalidid");
+                Vars.ui.loadfrag.hide();
+                Vars.netClient.disconnectQuietly();
+                return;
+            }
+
             Packets.ConnectPacket c = new Packets.ConnectPacket();
             c.name = Vars.player.name;
             c.locale = locale;
@@ -134,7 +144,7 @@ public class Protocol {
             c.versionType = Version.type;
             c.color = Vars.player.color.rgba();
             c.usid = Reflect.invoke(NetClient.class, Vars.netClient, "getUsid", new Object[] { packet.addressTCP }, String.class);
-            c.uuid = Vars.platform.getUUID();
+            c.uuid = uuid;
 
             if (c.uuid == null) {
                 Vars.ui.showErrorMessage("@invalidid");
@@ -193,6 +203,13 @@ public class Protocol {
                 dataStream.writeUTF(Version.type);
                 dataStream.writeInt(Vars.player.color.rgba());
                 dataStream.writeUTF(Reflect.invoke(NetClient.class, Vars.netClient, "getUsid", new Object[] { addressTCP }, String.class));
+
+                byte[] b = Base64Coder.decode(uuid);
+                dataStream.write(b);
+                CRC32 crc = new CRC32();
+                crc.update(Base64Coder.decode(uuid), 0, b.length);
+                dataStream.writeLong(crc.getValue());
+
                 dataStream.writeUTF(uuid);
                 dataStream.writeUTF(locale);
                 dataStream.close();

@@ -10,7 +10,7 @@ public class MVars {
 
     public static MRules rules;
 
-    public static final int version = 2;
+    public static final int version = 3;
     public static MapView oldMapView;
     public static OMapView mapView;
     public static OMapEditor mapEditor;

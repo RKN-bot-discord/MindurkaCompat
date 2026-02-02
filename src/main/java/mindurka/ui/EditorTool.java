@@ -1,6 +1,7 @@
 package mindurka.ui;
 
 import arc.Core;
+import arc.func.Boolp;
 import arc.input.KeyCode;
 import arc.math.Mathf;
 import arc.scene.ui.ImageButton;
@@ -165,12 +166,14 @@ public enum EditorTool {
         {
             lockedBehind = Gamemodes.forts;
             blockTool = false;
+            visibleIf = () -> !((Forts.Impl) MVars.rules.gamemode()).plotKind().name().equals("none");
         }
     },
     fortsPlotToggle(KeyCode.w) {
         {
             lockedBehind = Gamemodes.forts;
             blockTool = false;
+            visibleIf = () -> !((Forts.Impl) MVars.rules.gamemode()).plotKind().name().equals("none");
         }
 
         @Override
@@ -231,6 +234,7 @@ public enum EditorTool {
     private final KeyCode defaultKey;
     public Drag draggable = Drag.Touch;
     public @Nullable Gamemode lockedBehind = null;
+    public @Nullable Boolp visibleIf = null;
 
     public KeyCode key() {
         return defaultKey;

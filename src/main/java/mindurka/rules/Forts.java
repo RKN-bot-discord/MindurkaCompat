@@ -1,6 +1,7 @@
 package mindurka.rules;
 
 import arc.util.io.Streams;
+import mindurka.MVars;
 import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -164,9 +165,7 @@ public class Forts extends Gamemode {
                     pwrite.clear();
                     plotKind().writeRules(pwrite);
 
-                    pwrite.teams("rules.teams", (team, tw) -> {
-                        plotKind().writeTeamRules(team, tw);
-                    }, team -> false);
+                    pwrite.teams("rules.teams", plotKind()::writeTeamRules, team -> false);
                 };
                 refreshPlotKindRules[0].run();
             }
@@ -192,6 +191,7 @@ public class Forts extends Gamemode {
         public Impl plotKind(FortsPlotKind value) {
             plotKind.remove();
             plotKind = value.create(rc);
+            if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
             return this;
         }
 

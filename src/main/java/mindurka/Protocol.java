@@ -238,8 +238,6 @@ public class Protocol {
 
         try {
             pair = new KeyPair(factory.generatePublic(new X509EncodedKeySpec(pubkeyBytes)), factory.generatePrivate(new PKCS8EncodedKeySpec(privkeyBytes)));
-            Log.info(pair.getPublic().getFormat());
-            Log.info(pair.getPublic().getAlgorithm());
         } catch (InvalidKeySpecException e) {
             Vars.ui.showException("Failed to parse saved key", e);
             generateKeyAsync();

@@ -11,7 +11,7 @@ public class ToolOptions {
     // public FortsPlotState fortsToggleState = FortsPlotState.enabled;
     public boolean fortsCarverPlace = true;
     public int radius = 1;
-    public Block selectedBlock = Blocks.stone;
+    public Block selectedBlock = Blocks.coreShard;
     public Team team = Team.sharded;
     public EditorTool tool = EditorTool.pencil;
 

@@ -341,8 +341,8 @@ public class OEditorDialog extends MapEditorDialog {
 
                     if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.forts) {
                         tools.row();
-                        addTool.get(EditorTool.fortsPlotToggle);
-                        addTool.get(EditorTool.fortsPlotCarver);
+                        if (EditorTool.fortsPlotToggle.visibleIf.get()) addTool.get(EditorTool.fortsPlotToggle);
+                        if (EditorTool.fortsPlotCarver.visibleIf.get()) addTool.get(EditorTool.fortsPlotCarver);
                     }
                 };
                 refreshTools.run();
@@ -650,6 +650,7 @@ public class OEditorDialog extends MapEditorDialog {
 
             if (view.editorAction == null) for (EditorTool tool : EditorTool.values()) {
                 if (tool.lockedBehind != null && tool.lockedBehind != MVars.rules.gamemodeFactory()) continue;
+                if (tool.visibleIf != null && !tool.visibleIf.get()) continue;
                 if (tool.key() == KeyCode.unset) continue;
                 if (!Core.input.keyTap(tool.key())) continue;
                 MVars.toolOptions.tool = tool;

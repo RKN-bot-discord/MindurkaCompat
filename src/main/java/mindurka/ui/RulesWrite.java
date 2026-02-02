@@ -13,6 +13,7 @@ import arc.func.Intc;
 import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
+import arc.graphics.g2d.TextureRegion;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.ButtonGroup;
@@ -331,7 +332,8 @@ public class RulesWrite {
         if (!shouldAdd(tlKey)) return;
 
         final Table table = new Table();
-        root.add(table).fillX().row();
+        root.add(table).left().row();
+        table.defaults().left();
 
         class TeamData {
             boolean shown;
@@ -353,7 +355,7 @@ public class RulesWrite {
                     RulesWrite write = new RulesWrite(c, filter);
                     write.parent = RulesWrite.this;
                     sectionConf.get(team, write);
-                }, () -> this.shown).left().fillX().row();
+                }, () -> this.shown).left().padBottom(2).fillX().row();
                 table.add(container).fillX().padLeft(6).row();
             }
 
@@ -365,16 +367,19 @@ public class RulesWrite {
         final OrderedMap<Team, TeamData> dataList = new OrderedMap<>();
 
         class AbstractTeamData {
-            boolean shown;
+            Team team = null;
             final Table mainContainer = new Table();
-            final Table buttonContainer = new Table();
+            final Button button;
             Table contentsTable;
 
-            TextureRegionDrawable buttonIcon() { return shown ? Icon.downOpen : Icon.upOpen; }
+            TextureRegionDrawable buttonIcon() { return (team == null || dataList.containsKey(team)) ? Icon.cancel : button.isChecked() ? Icon.downOpen : Icon.upOpen; }
 
             AbstractTeamData() {
-                Button button = new Button(Styles.togglet);
-                button.add(new Image(Icon.cancel)).size(Icon.cancel.imageSize() / Scl.scl(1));
+                button = new Button(Styles.togglet);
+
+                Image image = new Image(Icon.cancel);
+                Cell<Image> imageCell = button.add(image).left().size(Icon.cancel.imageSize() / Scl.scl(1)).padLeft(-((Icon.downOpen.imageSize() + Icon.cancel.imageSize() / 2) / Scl.scl(1)));
+
                 final TextField textField = new TextField();
                 textField.setValidator(text -> {
                     if (!Strings.canParsePositiveInt(text)) return false;
@@ -382,15 +387,40 @@ public class RulesWrite {
                     return v >= 0 && v < 255;
                 });
                 textField.changed(() -> {
-                    if (!textField.isValid()) return;
+                    if (!textField.isValid()) team = null;
+                    else team = Team.all[Strings.parseInt(textField.getText())];
+
+                    image.setDrawable(buttonIcon());
+                    contentsTable.clear();
+                    if (team == null || dataList.containsKey(team)) {
+                        button.setChecked(false);
+                    } else {
+                        textField.color.set(team.color);
+                        RulesWrite write = new RulesWrite(contentsTable, filter);
+                        write.parent = RulesWrite.this;
+                        sectionConf.get(team, write);
+                    }
                 });
-                button.add(textField).fillX();
-                buttonContainer.add(button).width(300).left();
-                mainContainer.add(buttonContainer).fillX().padBottom(2).row();
+                button.add(textField).fillX().pad(0).margin(0);
+
+                button.clicked(() -> {
+                    if (!textField.isValid() || dataList.containsKey(team)) {
+                        button.setChecked(false);
+                        return;
+                    }
+
+                    image.setDrawable(buttonIcon());
+                });
+
+                mainContainer.add(button).marginLeft(14).width(260).height(55).padBottom(2).left().row();
 
                 mainContainer.collapser(c -> {
+                    c.clear();
                     contentsTable = c;
-                }, () -> shown);
+                    c.defaults().left();
+                }, button::isChecked).left().marginBottom(2).row();
+
+                table.add(mainContainer).left().padLeft(6);
             }
         }
 
@@ -398,8 +428,8 @@ public class RulesWrite {
             dataList.put(team, new TeamData(team));
         }
         for (Team team : Team.all) {
-            if (!enabled.get(team)) continue;
             if (dataList.containsKey(team)) continue;
+            if (!enabled.get(team)) continue;
             dataList.put(team, new TeamData(team));
         }
 

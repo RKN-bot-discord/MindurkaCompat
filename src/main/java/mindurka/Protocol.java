@@ -256,8 +256,8 @@ public class Protocol {
                 pair = syncObject.newPair;
             }
 
-            Log.info(pair.getPublic().getFormat());
-            Log.info(pair.getPublic().getAlgorithm());
+            assert pair.getPublic().getFormat().equals("X.509");
+            assert pair.getPublic().getAlgorithm().equals("RSA");
 
             KeyFactory factory = Util.yeet(() -> KeyFactory.getInstance(encryptionScheme));
 

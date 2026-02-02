@@ -200,6 +200,8 @@ public class OCustomRulesDialog extends CustomRulesDialog {
         write = writeRoot.category("teams");
         if (showRuleEditRule)
             write.b("rules.allowedit", () -> rules.allowEditRules, b -> rules.allowEditRules = b);
+        write.team("rules.playerteam", t -> rules.defaultTeam = t, () -> rules.defaultTeam);
+        write.team("rules.enemyteam", t -> rules.waveTeam = t, () -> rules.waveTeam);
         write.teams("teams", (team, wteam) -> {
             Rules.TeamRule teams = rules.teams.get(team);
 

@@ -137,7 +137,10 @@ public class LayerToolContext implements ToolContext {
     @Override
     public Floor floor(int x, int y) {
         Tile tile = Vars.world.tiles.get(x, y);
-        if (tile == null) return Blocks.empty.asFloor();
+        if (tile == null) {
+            if (MVars.toolOptions.floorsAsOverlays) return Blocks.air.asFloor();
+            return Blocks.empty.asFloor();
+        }
         if (MVars.toolOptions.floorsAsOverlays) return tile.overlay();
         return tile.floor();
     }

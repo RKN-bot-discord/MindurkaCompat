@@ -19,6 +19,8 @@ public class MVars {
     public static ToolOptions toolOptions = new ToolOptions();
     public static Protocol protocol = new Protocol();
 
+    public static boolean patchEditorLoaded = false;
+
     private static BitMap mapbits = null;
     public static BitMap mapbits() {
         if (mapbits == null || mapbits.width != Vars.world.width() || mapbits.height != Vars.world.height()) {

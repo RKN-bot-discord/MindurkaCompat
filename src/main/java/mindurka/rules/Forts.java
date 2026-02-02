@@ -466,7 +466,6 @@ public class Forts extends Gamemode {
                     Blocks.surgeWallLarge,
                     Blocks.scrapWall,
                     Blocks.mendProjector,
-                    Blocks.overdriveProjector, // May be re-enabled in future
                     Blocks.overdriveDome,
                     Blocks.shockMine,
                     Blocks.ductUnloader,

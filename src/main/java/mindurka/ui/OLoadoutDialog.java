@@ -6,6 +6,7 @@ import arc.struct.Seq;
 import arc.util.Reflect;
 import arc.util.Structs;
 import mindurka.Util;
+import mindurka.util.Report;
 import mindustry.Vars;
 import mindustry.type.Item;
 import mindustry.type.ItemSeq;
@@ -13,14 +14,25 @@ import mindustry.type.ItemStack;
 import mindustry.ui.dialogs.LoadoutDialog;
 
 public class OLoadoutDialog extends LoadoutDialog {
+    private Runnable updater() {
+        return Reflect.get(LoadoutDialog.class, this, "updater");
+    }
+    private Runnable resetter() {
+        return Reflect.get(LoadoutDialog.class, this, "resetter");
+    }
+
     public OLoadoutDialog() {
         super();
 
         getChildren().get(getChildren().size - 1).clicked(() -> {
-            Reflect.<Runnable>get(LoadoutDialog.class, this, "resetter").run();
-            reseed();
-            Reflect.<Runnable>get(LoadoutDialog.class, this, "updater").run();
-            Reflect.<Runnable>invoke(LoadoutDialog.class, this, "setup", Util.noargs).run();
+            try {
+                resetter().run();
+                reseed();
+                if (updater() != null) updater();
+                Reflect.<Runnable>invoke(LoadoutDialog.class, this, "setup", Util.noargs).run();
+            } catch (Throwable t) {
+                Report.withException(t);
+            }
         });
     }
 

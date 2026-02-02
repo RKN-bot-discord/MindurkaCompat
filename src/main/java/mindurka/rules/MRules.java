@@ -102,10 +102,10 @@ public class MRules {
             Vars.state.patcher.patches.remove(0);
         }
 
-        if (gamemode != null && (gamemode.factory() != newValue || !Core.input.shift())) gamemode.remove();
+        if (gamemode != null && (gamemodeFactory() != newValue || !Core.input.shift())) gamemode.remove();
         if (newValue == null) remove();
         else {
-            if (!Core.input.shift() || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
+            if (gamemodeFactory() == null || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());

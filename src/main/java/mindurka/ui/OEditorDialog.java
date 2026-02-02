@@ -68,6 +68,7 @@ import mindustry.world.meta.Env;
 public class OEditorDialog extends MapEditorDialog {
     private final OMapView view;
     private final OMapEditor editor;
+    private MapInfoDialog infoDialog;
     private BaseDialog menu;
 
     private Rules lastSavedRules = null;
@@ -137,6 +138,9 @@ public class OEditorDialog extends MapEditorDialog {
         shown(this::build);
 
         buildMenu();
+
+        // Without this patch editor kills itself.
+        infoDialog = Reflect.get(MapEditorDialog.class, this, "infoDialog");
     }
 
     @Override

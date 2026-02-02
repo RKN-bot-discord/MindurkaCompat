@@ -58,6 +58,7 @@ import mindustry.io.MapIO;
 import mindustry.maps.Map;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.ui.dialogs.LoadoutDialog;
 import mindustry.ui.dialogs.MapPlayDialog;
 import mindustry.world.Block;
 import mindustry.world.blocks.environment.OverlayFloor;
@@ -69,6 +70,14 @@ public class OEditorDialog extends MapEditorDialog {
     private final OMapView view;
     private final OMapEditor editor;
     private MapInfoDialog infoDialog;
+    private final MapLoadDialog loadDialog = new MapLoadDialog(map -> Vars.ui.loadAnd(() -> {
+        try {
+            MVars.mapEditor.OBeginEdit(map);
+        } catch (Exception e) {
+            Vars.ui.showException(e);
+            Log.err(e);
+        }
+    }));
     private BaseDialog menu;
 
     private Rules lastSavedRules = null;
@@ -87,6 +96,7 @@ public class OEditorDialog extends MapEditorDialog {
         super();
 
         this.editor = editor;
+        Reflect.set(MapEditorDialog.class, this, "loadDialog", loadDialog);
         view = (MVars.mapView = new OMapView());
 
         background(Styles.black);
@@ -674,7 +684,6 @@ public class OEditorDialog extends MapEditorDialog {
 
         menu.cont.table(t -> {
             final MapGenerateDialog generateDialog = Reflect.get(MapEditorDialog.class, this, "generateDialog");
-            final MapLoadDialog loadDialog = Reflect.get(MapEditorDialog.class, this, "loadDialog");
 
             t.defaults().size(swidth, 60f).padBottom(5).padRight(5).padLeft(5);
 
@@ -707,7 +716,7 @@ public class OEditorDialog extends MapEditorDialog {
                                     if(MapIO.isImage(file)){
                                         Vars.ui.showInfo("@editor.errorimage");
                                     }else{
-                                        editor.beginEdit(MapIO.createMap(file, true));
+                                        editor.OBeginEdit(MapIO.createMap(file, true));
                                     }
                                 });
                             })),
@@ -717,7 +726,7 @@ public class OEditorDialog extends MapEditorDialog {
                                     Vars.ui.loadAnd(() -> {
                                         try{
                                             Pixmap pixmap = new Pixmap(file);
-                                            editor.beginEdit(pixmap);
+                                            editor.OBeginEdit(pixmap);
                                             pixmap.dispose();
                                         }catch(Exception e){
                                             Vars.ui.showException("@editor.errorload", e);

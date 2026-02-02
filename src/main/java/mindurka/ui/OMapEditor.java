@@ -8,6 +8,7 @@ import arc.util.Log;
 import arc.util.Reflect;
 import mindurka.MVars;
 import mindurka.rules.Gamemode;
+import mindurka.rules.MRules;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.editor.DrawOperation;
@@ -52,6 +53,7 @@ public class OMapEditor extends MapEditor {
         loading = true;
         createTiles(width, height);
         renderer.resize(width, height);
+        MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         loading = false;
     }
 
@@ -73,6 +75,7 @@ public class OMapEditor extends MapEditor {
         }
         load(() -> MapIO.loadMap(map, context));
         renderer.resize(width(), height());
+        MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
 
         if (MVars.rules.gamemode() != null) {
             a: {
@@ -108,6 +111,7 @@ public class OMapEditor extends MapEditor {
         createTiles(pixmap.width, pixmap.height);
         load(() -> MapIO.readImage(pixmap, tiles()));
         renderer.resize(pixmap.width, pixmap.height);
+        MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         // 'load' sets this to 'false'. What's the fucking point?
         loading = false;
     }
@@ -138,6 +142,12 @@ public class OMapEditor extends MapEditor {
         for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) {
             tiles.set(x, y, new EditorTile(x, y, Blocks.stone.id, 0, 0));
         }
+    }
+
+    @Override
+    public void resize(int width, int height, int shiftX, int shiftY) {
+        super.resize(width, height, shiftX, shiftY);
+        MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
     }
 
     class Context implements WorldContext {

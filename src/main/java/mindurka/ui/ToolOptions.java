@@ -8,7 +8,6 @@ import mindustry.game.Team;
 import mindustry.world.Block;
 
 public class ToolOptions {
-    // public FortsPlotState fortsToggleState = FortsPlotState.enabled;
     public boolean fortsCarverPlace = true;
     public int radius = 1;
     public Block selectedBlock = Blocks.coreShard;

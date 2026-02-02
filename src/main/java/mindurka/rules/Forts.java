@@ -509,7 +509,6 @@ public class Forts extends Gamemode {
                     Blocks.tankFabricator,
                     Blocks.tankRefabricator,
                     Blocks.tankAssembler,
-                    Blocks.basicAssemblerModule,
                     Blocks.reinforcedPayloadConveyor,
                     Blocks.reinforcedPayloadRouter,
                     Blocks.smallDeconstructor,

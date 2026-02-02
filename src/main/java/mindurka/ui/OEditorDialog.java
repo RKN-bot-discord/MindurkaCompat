@@ -406,7 +406,6 @@ public class OEditorDialog extends MapEditorDialog {
         });
 
         Table[] configTable = { null };
-        Block[] lastBlock = { null };
 
         cont.table(search -> {
             search.image(Icon.zoom).padRight(8);

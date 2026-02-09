@@ -521,8 +521,8 @@ public class Forts extends Gamemode {
                     Blocks.memoryBank,
                     Blocks.logicDisplay,
                     Blocks.largeLogicDisplay,
-                    Blocks.logicDisplayTile,
-                    Blocks.reinforcedMessage
+                    Blocks.reinforcedMessage,
+                    Blocks.tileLogicDisplay
             );
             rules.hideBannedBlocks = true;
             rc.customRules.overdriveIgnoresCheat(true);

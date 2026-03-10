@@ -21,6 +21,8 @@ public class MVars {
 
     public static boolean patchEditorLoaded = false;
 
+    // FIXME: This is bullshit.
+
     private static BitMap mapbits = null;
     public static BitMap mapbits() {
         if (mapbits == null || mapbits.width != Vars.world.width() || mapbits.height != Vars.world.height()) {

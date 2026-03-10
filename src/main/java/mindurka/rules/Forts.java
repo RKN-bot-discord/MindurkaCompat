@@ -20,6 +20,7 @@ public class Forts extends Gamemode {
     public static final String NAME = "forts";
     public static final String ENABLE_1VA = PREFIX+".enable_1va";
     public static final String ENABLE_VNW = PREFIX+".enable_wnv";
+    public static final String EXPANSION_BLOCK = PREFIX+".expansion_block";
 
     public static final String THOR_PREFIX = PREFIX+".thor";
     public static final String THOR_ENABLED = THOR_PREFIX+".enabled";
@@ -84,6 +85,7 @@ public class Forts extends Gamemode {
 
                 enable1va = read.r(ENABLE_1VA, true);
                 enableVnw = read.r(ENABLE_VNW, false);
+                expansionBlock = read.r(EXPANSION_BLOCK, Blocks.impulsePump);
 
                 thorEnabled = read.r(THOR_ENABLED, true);
                 thorDelay = read.r(THOR_DELAY, 0.5f);
@@ -119,6 +121,7 @@ public class Forts extends Gamemode {
 
             write.b("rules.mindurka.enable_1va", this::enable1va, this::enable1va);
             write.b("rules.mindurka.enable_vnw", this::enableVnw, this::enableVnw);
+            write.block("rules.mindurka.expansion_block", this::expansionBlock, this::expansionBlock);
             write.spacer();
 
             write.b("rules.mindurka.thor.enabled", this::thorEnabled, this::thorEnabled);
@@ -208,6 +211,14 @@ public class Forts extends Gamemode {
         public Impl enableVnw(boolean value) {
             enableVnw = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ENABLE_VNW, value); }
+            return this;
+        }
+
+        private Block expansionBlock;
+        public Block expansionBlock() { return expansionBlock; }
+        public Impl expansionBlock(Block value) {
+            expansionBlock = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(EXPANSION_BLOCK, value); }
             return this;
         }
 
@@ -408,6 +419,8 @@ public class Forts extends Gamemode {
             rules.tags.remove(NEOPLASIA_BLOCK);
 
             rules.tags.remove(ENABLE_1VA);
+            rules.tags.remove(ENABLE_VNW);
+            rules.tags.remove(EXPANSION_BLOCK);
 
             plotKind.remove();
         }

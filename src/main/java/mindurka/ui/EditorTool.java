@@ -207,6 +207,24 @@ public enum EditorTool {
         }
     },
 
+    // Hub tools.
+    hubServerConfig(KeyCode.q) {
+        {
+            lockedBehind = Gamemodes.hub;
+            blockTool = false;
+        }
+
+        @Override
+        public void toolOptions(Table table) {
+            float size = Vars.mobile ? 50f : 58f;
+
+            table.label(() -> "@editor.mindurka.servername").left().pad(6).row();
+            table.field(MVars.toolOptions.hubServer, text -> {
+                MVars.toolOptions.hubServer = text;
+            }).growX().left().row();
+        }
+    },
+
     ;
 
     public enum Drag {
@@ -270,8 +288,8 @@ public enum EditorTool {
 
         cb.get(startx, starty);
         for (float i = 0; i < dist; i++) {
-            int nx = Mathf.floor(x);
-            int ny = Mathf.floor(y);
+            int nx = Mathf.round(x);
+            int ny = Mathf.round(y);
 
             x += dx;
             y += dy;

@@ -20,6 +20,8 @@ public class ToolOptions {
     public Blend blend;
     public FortsPlotState fortsPlotState = FortsPlotState.enabled;
     public boolean floorsAsOverlays = false;
+    public String hubServer = "";
+    public int hubSize = -1;
 
     public @Nullable BitMap fakeCliffsMap() {
         if (!cliffAuto) return null;
@@ -34,9 +36,11 @@ public class ToolOptions {
         tool = EditorTool.pencil;
         radius = 1;
         fortsCarverPlace = true;
-        // fortsToggleState = FortsPlotState.enabled;
+        fortsPlotState = FortsPlotState.enabled;
         cliffAuto = false;
         cliffSides = (byte) 0;
         blend = Blend.normal;
+        hubServer = "";
+        hubSize = -1;
     }
 }

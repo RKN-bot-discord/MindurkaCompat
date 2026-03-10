@@ -66,8 +66,7 @@ public class LayerToolContext implements ToolContext {
         tile.data = data;
         tile.setBlock(Blocks.air);
         tile.setBlock(block, team, rotation);
-        if (block.saveConfig)
-            block.placeEnded(tile, null, rotation, block.lastConfig);
+        ((EditorTile) tile).placeEnded(block);
     }
 
     private void actualSetFloor(int x, int y, Floor floor, byte data) {
@@ -77,8 +76,7 @@ public class LayerToolContext implements ToolContext {
         tile.floorData = data;
         if (MVars.toolOptions.floorsAsOverlays) tile.setOverlay(floor);
         else tile.setFloor(floor);
-        if (floor.saveConfig)
-            floor.placeEnded(tile, null, 0, floor.lastConfig);
+        ((EditorTile) tile).placeEnded(floor);
     }
 
     @Override
@@ -108,8 +106,8 @@ public class LayerToolContext implements ToolContext {
     @Override
     public void setAny(int x, int y, Block block) {
         if (block == null) return;
-        if (block.isFloor()) setFloor(x, y, block.asFloor());
-        else if (block.isOverlay()) setOverlay(x, y, block);
+        if (block.isOverlay()) setOverlay(x, y, block);
+        else if (block.isFloor()) setFloor(x, y, block.asFloor());
         else actualSetBlock(x, y, block, 0, MVars.toolOptions.team);
     }
 
@@ -124,7 +122,10 @@ public class LayerToolContext implements ToolContext {
     public void setOverlay(int x, int y, Block overlay) {
         Tile tile = Vars.world.tiles.get(x, y);
         if (tile == null) return;
-        if (overlay != null) tile.setOverlay(overlay);
+        if (overlay != null) {
+            tile.setOverlay(overlay);
+            ((EditorTile) tile).placeEnded(overlay);
+        }
     }
 
     @Override

@@ -22,6 +22,8 @@ public class MIcons {
     private static final TextureRegionDrawable icons = new TextureRegionDrawable(Core.atlas.find("mindurkacompat-icons"));
     public static final TextureRegionDrawable fortsPlotToggle = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 0, 128, 128));
     public static final TextureRegionDrawable fortsPlotCarver = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 0, 128, 128));
+    public static final TextureRegionDrawable hubServerConfig = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 256, 0, 128, 128));
+    public static final TextureRegionDrawable clipboard = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 384, 0, 128, 128));
     public static final TextureRegionDrawable blendNormal = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 128, 128, 128));
     public static final TextureRegionDrawable blendReplace = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 128, 128, 128));
     public static final TextureRegionDrawable blendUnder = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 256, 128, 128, 128));
@@ -46,6 +48,8 @@ public class MIcons {
         Icon.icons.put("cliff-7", cliff7);
         Icon.icons.put("fortsPlotToggle", fortsPlotToggle);
         Icon.icons.put("fortsPlotCarver", fortsPlotCarver);
+        Icon.icons.put("hubServerConfig", hubServerConfig);
+        Icon.icons.put("tool-clipboard", clipboard);
         Icon.icons.put("blend-normal", blendNormal);
         Icon.icons.put("blend-replace", blendReplace);
         Icon.icons.put("blend-under", blendUnder);

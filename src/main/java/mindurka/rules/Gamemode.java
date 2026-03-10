@@ -129,6 +129,7 @@ public abstract class Gamemode {
          initialized = true;
 
          addGamemode(Gamemodes.forts);
+         addGamemode(Gamemodes.hub);
      }
      public static @Nullable Gamemode forName(String name) {
          return factories.get(name);

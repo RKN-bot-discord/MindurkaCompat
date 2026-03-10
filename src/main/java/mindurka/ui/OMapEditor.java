@@ -5,14 +5,11 @@ import arc.graphics.Pixmap;
 import arc.struct.Seq;
 import arc.struct.StringMap;
 import arc.util.Log;
-import arc.util.Reflect;
 import mindurka.MVars;
 import mindurka.rules.Gamemode;
 import mindurka.rules.MRules;
 import mindustry.Vars;
 import mindustry.content.Blocks;
-import mindustry.editor.DrawOperation;
-import mindustry.editor.EditorTile;
 import mindustry.editor.MapEditor;
 import mindustry.io.MapIO;
 import mindustry.maps.Map;
@@ -26,6 +23,12 @@ import java.io.IOException;
 public class OMapEditor extends MapEditor {
     private final Context context = new Context();
     private boolean loading;
+
+    private DrawOperation currentOp;
+    private Seq<DrawOperation> undoStack;
+    private Seq<DrawOperation> redoStack;
+
+    public boolean undoing = false;
 
     public OMapEditor() {
         super();
@@ -54,6 +57,8 @@ public class OMapEditor extends MapEditor {
         createTiles(width, height);
         renderer.resize(width, height);
         MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
+        undoStack = new Seq<>(16);
+        redoStack = new Seq<>(4);
         loading = false;
     }
 
@@ -67,6 +72,9 @@ public class OMapEditor extends MapEditor {
 
     public void OBeginEdit(Map map) {
         reset();
+
+        undoStack = new Seq<>(16);
+        redoStack = new Seq<>(4);
 
         loading = true;
         tags.putAll(map.tags);
@@ -107,6 +115,9 @@ public class OMapEditor extends MapEditor {
     public void OBeginEdit(Pixmap pixmap) {
         reset();
 
+        undoStack = new Seq<>(16);
+        redoStack = new Seq<>(4);
+
         loading = true;
         createTiles(pixmap.width, pixmap.height);
         load(() -> MapIO.readImage(pixmap, tiles()));
@@ -123,10 +134,58 @@ public class OMapEditor extends MapEditor {
         tags = new StringMap();
     }
 
+    public DrawOperation currentOp() {
+        if (currentOp == null) currentOp = new DrawOperation();
+        return currentOp;
+    }
+
+    @Override
+    public void flushOp() {
+        redoStack.clear();
+        if (currentOp == null) return;
+        currentOp.maybeCompress();
+        undoStack.add(currentOp);
+        currentOp = null;
+    }
+
     public void undoCurrentOp() {
-        if (Reflect.get(MapEditor.class, this, "currentOp") == null) return;
-        Reflect.<DrawOperation>get(MapEditor.class, this, "currentOp").undo();
-        Reflect.set(MapEditor.class, this, "currentOp", null);
+        DrawOperation that = currentOp;
+        currentOp = null;
+        undoing = true;
+        that.undo();
+        undoing = false;
+        if (currentOp != null) redoStack.add(currentOp);
+        currentOp = null;
+    }
+
+    @Override
+    public void undo() {
+        if (currentOp != null) {
+            undoCurrentOp();
+            return;
+        }
+        if (undoStack.isEmpty()) return;
+
+        DrawOperation op = undoStack.pop();
+        undoing = true;
+        op.undo();
+        undoing = false;
+        if (currentOp != null) redoStack.add(currentOp);
+        currentOp = null;
+    }
+
+    @Override
+    public void redo() {
+        if (currentOp != null) {
+            undoStack.add(currentOp);
+            currentOp = null;
+        }
+
+        if (redoStack.isEmpty()) return;
+
+        undoing = true;
+        redoStack.pop().undo();
+        undoing = false;
     }
 
     @Override

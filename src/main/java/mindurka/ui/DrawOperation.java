@@ -3,7 +3,6 @@ package mindurka.ui;
 import arc.struct.ByteSeq;
 import arc.struct.Seq;
 import arc.util.Log;
-import mindurka.MVars;
 import mindurka.Util;
 import mindustry.Vars;
 import mindustry.game.Team;
@@ -12,6 +11,8 @@ import mindustry.world.Block;
 import mindustry.world.Tile;
 import mindustry.world.blocks.environment.Floor;
 import net.jpountz.lz4.LZ4Factory;
+
+// Only touch on your own risk.
 
 public class DrawOperation {
     private ByteSeq data;
@@ -334,7 +335,7 @@ public class DrawOperation {
         lastX = x;
         lastY = y;
 
-        Log.info("tile(" + x + ", " + y + ")");
+        // Log.info("tile(" + x + ", " + y + ")");
     }
 
     public void floor(Floor floor, short x, short y) {
@@ -349,7 +350,7 @@ public class DrawOperation {
         lastX = x;
         lastY = y;
 
-        Log.info("floor(" + floor.name + ", " + x + ", " + y + ")");
+        // Log.info("floor(" + floor.name + ", " + x + ", " + y + ")");
     }
     public void floorData(byte newData) {
         maybeDecompress();
@@ -357,7 +358,7 @@ public class DrawOperation {
 
         data.add(newData, opFloorData);
 
-        Log.info("floorData(" + (newData & 0xff) + ")");
+        // Log.info("floorData(" + (newData & 0xff) + ")");
     }
 
     public void block(Block block, short x, short y, Team team, int rotation, Building build) {
@@ -376,7 +377,7 @@ public class DrawOperation {
         lastX = x;
         lastY = y;
 
-        Log.info("block(" + block.name + ", " + x + ", " + y + ", team#" + team.id + ", rot = " + rotation + ")");
+        // Log.info("block(" + block.name + ", " + x + ", " + y + ", team#" + team.id + ", rot = " + rotation + ")");
     }
     public void rotation(int rotation) {
         maybeDecompress();
@@ -397,7 +398,7 @@ public class DrawOperation {
 
         data.add(newData, opBlockData);
 
-        Log.info("blockData(" + (newData & 0xff) + ")");
+        // Log.info("blockData(" + (newData & 0xff) + ")");
     }
 
     public void extraData(int newData) {
@@ -407,7 +408,7 @@ public class DrawOperation {
         Util.writeInt(data, newData);
         data.add(opExtraData);
 
-        Log.info("extraData(" + (newData & 0xffffffffL) + ")");
+        // Log.info("extraData(" + (newData & 0xffffffffL) + ")");
     }
 
     public void overlay(Floor overlay, short x, short y) {
@@ -422,7 +423,7 @@ public class DrawOperation {
         lastX = x;
         lastY = y;
 
-        Log.info("overlay(" + overlay.name + ", " + x + ", " + y + ")");
+        // Log.info("overlay(" + overlay.name + ", " + x + ", " + y + ")");
     }
     public void overlayData(byte newData) {
         maybeDecompress();
@@ -430,6 +431,6 @@ public class DrawOperation {
 
         data.add(newData, opOverlayData);
 
-        Log.info("overlayData(" + (newData & 0xff) + ")");
+        // Log.info("overlayData(" + (newData & 0xff) + ")");
     }
 }

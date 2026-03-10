@@ -115,8 +115,6 @@ public class DrawOperation {
                     case opFloorData: {
                         assert cursor != null;
                         byte tileData = data.get(--i);
-                        MVars.mapEditor.currentOp().overlayData(cursor.floorData);
-                        MVars.mapEditor.currentOp().tile(cursor.x, cursor.y);
                         cursor.floorData = tileData;
                         break;
                     }
@@ -151,8 +149,6 @@ public class DrawOperation {
                     case opBlockData: {
                         assert cursor != null;
                         byte tileData = data.get(--i);
-                        MVars.mapEditor.currentOp().overlayData(cursor.data);
-                        MVars.mapEditor.currentOp().tile(cursor.x, cursor.y);
                         cursor.data = tileData;
                         break;
                     }
@@ -183,8 +179,6 @@ public class DrawOperation {
                     case opOverlayData: {
                         assert cursor != null;
                         byte tileData = data.get(--i);
-                        MVars.mapEditor.currentOp().overlayData(cursor.overlayData);
-                        MVars.mapEditor.currentOp().tile(cursor.x, cursor.y);
                         cursor.overlayData = tileData;
                         break;
                     }
@@ -193,22 +187,134 @@ public class DrawOperation {
                         assert cursor != null;
                         i -= 4;
                         int tileData = Util.readInt(data, i);
-                        MVars.mapEditor.currentOp().extraData(cursor.extraData);
-                        MVars.mapEditor.currentOp().tile(cursor.x, cursor.y);
                         cursor.extraData = tileData;
                         break;
                     }
+
+                    default:
+                        throw new IllegalStateException("Invalid command " + data.items[i] + ". Is stack corrupted?");
                 }
             }
         } catch (Exception e) {
             StringBuilder builder = new StringBuilder();
-            for (int o = 0; o < data.size; o++) {
-                if (builder.length() > 0) builder.append(',');
-                builder.append(data.items[o] & 0xff);
+            cursor = null;
+            i = data.size - 1;
+            bi = dataObjects == null ? 0 : dataObjects.size - 1;
+            for (; i >= 0; i--) {
+                Log.err("i=" + i + ", bi=" + bi);
+                switch (data.items[i]) {
+                    case opTile: {
+                        i -= 2;
+                        short x = Util.readShort(data, i);
+                        i -= 2;
+                        short y = Util.readShort(data, i);
+                        i -= 2;
+                        cursor = Vars.world.tile(x, y);
+                        builder.append("- tile(").append(x).append(", ").append(y).append(")\n");
+                        Log.err("- tile("+x+", "+y+")");
+                        break;
+                    }
+
+                    case opFloor: {
+                        i -= 2;
+                        Floor floor = (Floor) Vars.content.block(Util.readShort(data, i));
+                        i -= 2;
+                        short x = Util.readShort(data, i);
+                        i -= 2;
+                        short y = Util.readShort(data, i);
+                        cursor = Vars.world.tile(x, y);
+                        builder.append("- floor(").append(floor.name).append(", ").append(x).append(", ").append(y).append(")\n");
+                        Log.err("- floor("+floor.name+", "+x+", "+y+")");
+                        break;
+                    }
+                    case opFloorData: {
+                        byte tileData = data.get(--i);
+                        if (cursor == null) builder.append("- floorData(").append(tileData).append(") !NOTILE\n");
+                        else builder.append("- floorData(").append(tileData).append(")\n");
+                        Log.err("- floorData("+tileData+")" + (cursor == null ? " !NOTILE" : ""));
+                        break;
+                    }
+
+                    case opBlock: {
+                        i -= 2;
+                        Block block = Vars.content.block(Util.readShort(data, i));
+
+                        i -= 2;
+                        short x = Util.readShort(data, i);
+
+                        i -= 2;
+                        short y = Util.readShort(data, i);
+
+                        cursor = Vars.world.tile(x, y);
+
+                        int rotation;
+                        if (block.rotate) {
+                            i -= 4;
+                            rotation = Util.readInt(data, i);
+                        } else rotation = 0;
+
+                        Team team;
+                        if (block.hasBuilding()) team = Team.all[data.get(--i) & 0xff];
+                        else team = Team.derelict;
+
+                        Building build = (Building) dataObjects.get(bi--);
+
+                        builder.append("- block(").append(block.name).append(", ").append(x).append(", ").append(y).append(", team#").append(team.id).append(")\n");
+                        Log.err("- block("+block.name+", "+x+", "+y+", team#"+team.id+")");
+                        break;
+                    }
+                    case opBlockData: {
+                        byte tileData = data.get(--i);
+                        if (cursor == null) builder.append("- blockData(").append(tileData).append(") !NOTILE\n");
+                        else builder.append("- blockData(").append(tileData).append(")\n");
+                        break;
+                    }
+                    case opTeam: {
+                        if (cursor == null) builder.append("- team(team#").append(data.get(--i) & 0xff).append(") !NOTILE\n");
+                        else builder.append("- team(team#").append(data.get(--i) & 0xff).append(")\n");
+                        break;
+                    }
+                    case opRotation: {
+                        i -= 4;
+                        int rotation = Util.readInt(data, i);
+                        if (cursor == null) builder.append("- rotation(").append(rotation).append(") !NOTILE\n");
+                        else builder.append("- rotation(").append(rotation).append(")\n");
+                        break;
+                    }
+
+                    case opOverlay: {
+                        i -= 2;
+                        Floor floor = (Floor) Vars.content.block(Util.readShort(data, i));
+                        i -= 2;
+                        short x = Util.readShort(data, i);
+                        i -= 2;
+                        short y = Util.readShort(data, i);
+                        cursor = Vars.world.tile(x, y);
+                        builder.append("- overlay(").append(floor.name).append(", ").append(x).append(", ").append(y).append(")\n");
+                        break;
+                    }
+                    case opOverlayData: {
+                        byte tileData = data.get(--i);
+                        if (cursor == null) builder.append("- overlayData(").append(tileData).append(") !NOTILE\n");
+                        else builder.append("- overlayData(").append(tileData).append(")\n");
+                        break;
+                    }
+
+                    case opExtraData: {
+                        i -= 4;
+                        int tileData = Util.readInt(data, i);
+                        if (cursor == null) builder.append("- extraData(").append(tileData).append(") !NOTILE\n");
+                        else builder.append("- extraData(").append(tileData).append(")\n");
+                        break;
+                    }
+
+                    default:
+                        throw new IllegalStateException("Invalid command " + data.items[i] + ". Is stack corrupted?");
+                }
             }
 
             Log.err("Fatal!");
-            Log.err("Command buffer: " + builder);
+            Log.err("Commands:\n" + builder);
             Log.err("Idx: " + i);
             throw new RuntimeException(e);
         }
@@ -227,6 +333,8 @@ public class DrawOperation {
 
         lastX = x;
         lastY = y;
+
+        Log.info("tile(" + x + ", " + y + ")");
     }
 
     public void floor(Floor floor, short x, short y) {
@@ -240,6 +348,8 @@ public class DrawOperation {
 
         lastX = x;
         lastY = y;
+
+        Log.info("floor(" + floor.name + ", " + x + ", " + y + ")");
     }
     public void floorData(byte newData) {
         maybeDecompress();
@@ -265,6 +375,8 @@ public class DrawOperation {
 
         lastX = x;
         lastY = y;
+
+        Log.info("block(" + block.name + ", " + x + ", " + y + ", team#" + team.id + ", rot = " + rotation + ")");
     }
     public void rotation(int rotation) {
         maybeDecompress();
@@ -309,11 +421,15 @@ public class DrawOperation {
 
         lastX = x;
         lastY = y;
+
+        Log.info("overlay(" + overlay.name + ", " + x + ", " + y + ")");
     }
     public void overlayData(byte newData) {
         maybeDecompress();
         if (data == null) data = new ByteSeq(32);
 
         data.add(newData, opOverlayData);
+
+        Log.info("overlayData(" + (newData & 0xff) + ")");
     }
 }

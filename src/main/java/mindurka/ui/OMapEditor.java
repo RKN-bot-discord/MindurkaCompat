@@ -150,6 +150,7 @@ public class OMapEditor extends MapEditor {
 
     public void undoCurrentOp() {
         DrawOperation that = currentOp;
+        that.maybeCompress();
         currentOp = null;
         undoing = true;
         that.undo();
@@ -177,6 +178,7 @@ public class OMapEditor extends MapEditor {
     @Override
     public void redo() {
         if (currentOp != null) {
+            currentOp.maybeCompress();
             undoStack.add(currentOp);
             currentOp = null;
         }
@@ -185,6 +187,11 @@ public class OMapEditor extends MapEditor {
 
         undoing = true;
         redoStack.pop().undo();
+        if (currentOp != null) {
+            currentOp.maybeCompress();
+            undoStack.add(currentOp);
+        }
+        currentOp = null;
         undoing = false;
     }
 

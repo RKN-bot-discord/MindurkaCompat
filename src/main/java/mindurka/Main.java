@@ -4,8 +4,6 @@
 
 package mindurka;
 
-import arc.Events;
-import mindustry.game.EventType;
 import mindustry.mod.Plugin;
 
 public class Main extends Plugin {

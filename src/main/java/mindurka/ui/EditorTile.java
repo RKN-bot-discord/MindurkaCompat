@@ -1,6 +1,7 @@
 package mindurka.ui;
 
 import arc.func.Prov;
+import arc.util.Log;
 import arc.util.Reflect;
 import mindurka.MVars;
 import mindustry.Vars;
@@ -35,19 +36,14 @@ public class EditorTile extends Tile {
 
         Vars.world.floorChanges++;
 
-        if (floor.saveData) {
-            MVars.mapEditor.currentOp().floorData(floorData);
-            MVars.mapEditor.currentOp().extraData(extraData);
-        }
-
-        Floor oldFloor = floor;
+        if (floor.saveData) MVars.mapEditor.currentOp().floorData(floorData);
+        if (block.saveData || overlay.saveData || floor.saveData) MVars.mapEditor.currentOp().extraData(extraData);
+        MVars.mapEditor.currentOp().floor(floor, x, y);
 
         floor = type;
         type.floorChanged(this);
 
         updateStatic();
-
-        MVars.mapEditor.currentOp().floor(oldFloor, x, y);
     }
 
     @Override
@@ -59,10 +55,8 @@ public class EditorTile extends Tile {
 
         if (block == type && (build == null || build.rotation == rotation && build.team == team) && !type.saveData) return;
 
-        if (block.saveData) {
-            MVars.mapEditor.currentOp().blockData(data);
-            MVars.mapEditor.currentOp().extraData(extraData);
-        }
+        if (block.saveData) MVars.mapEditor.currentOp().blockData(data);
+        if (block.saveData || overlay.saveData || floor.saveData) MVars.mapEditor.currentOp().extraData(extraData);
 
         Block prevBlock = block;
         EditorTile prevCenter = build == null ? this : (EditorTile) build.tile;
@@ -100,10 +94,8 @@ public class EditorTile extends Tile {
 
         assert type.isOverlay();
 
-        if (floor.saveData) {
-            MVars.mapEditor.currentOp().overlayData(overlayData);
-            MVars.mapEditor.currentOp().extraData(extraData);
-        }
+        if (overlay.saveData) MVars.mapEditor.currentOp().overlayData(overlayData);
+        if (block.saveData || overlay.saveData || floor.saveData) MVars.mapEditor.currentOp().extraData(extraData);
 
         Vars.world.floorChanges++;
 

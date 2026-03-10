@@ -97,7 +97,7 @@ public class Util {
     }
     public static int readInt(ByteSeq a, int pos) {
         intBuffer.position(0);
-        intBuffer.put(a.items, pos, 2);
+        intBuffer.put(a.items, pos, 4);
         return intBuffer.getInt(0);
     }
 }

@@ -140,6 +140,16 @@ public class OMapEditor extends MapEditor {
     }
 
     @Override
+    public boolean canRedo() {
+        return !redoStack.isEmpty();
+    }
+
+    @Override
+    public boolean canUndo() {
+        return !undoStack.isEmpty();
+    }
+
+    @Override
     public void flushOp() {
         redoStack.clear();
         if (currentOp == null) return;

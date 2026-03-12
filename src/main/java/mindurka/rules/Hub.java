@@ -8,7 +8,6 @@ import arc.math.geom.Vec2;
 import arc.scene.ui.layout.Scl;
 import arc.struct.Seq;
 import arc.util.Log;
-import arc.util.Reflect;
 import arc.util.pooling.Pools;
 import arc.util.serialization.Jval;
 import mindurka.MVars;

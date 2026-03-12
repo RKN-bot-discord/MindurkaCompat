@@ -95,8 +95,8 @@ public class EraseToolContext implements ToolContext {
     @Override
     public void setAny(int x, int y, Block block) {
         if (block == null) return;
-        if (block.isFloor()) setFloor(x, y, block.asFloor());
-        else if (block.isOverlay()) setOverlay(x, y, block);
+        if (block.isOverlay()) setOverlay(x, y, block);
+        else if (block.isFloor()) setFloor(x, y, block.asFloor());
         else setBlock(x, y, block);
     }
 

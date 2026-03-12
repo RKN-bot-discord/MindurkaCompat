@@ -22,6 +22,17 @@ public interface ToolContext {
     int width();
     int height();
 
+    /**
+     * Check if any writes will be actually applied to a layer.
+     *
+     * @return {@code true} if there is an underlying layer, otherwise {@code false}.
+     */
     boolean isLayer();
+    /**
+     * Check if using the erase mode.
+     *
+     * @return {@code true} if we are indeed erasing, otherwise {@code false}.
+     */
+    boolean isErase();
     boolean unsizedBlocks();
 }

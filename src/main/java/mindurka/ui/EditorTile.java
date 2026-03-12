@@ -1,7 +1,6 @@
 package mindurka.ui;
 
 import arc.func.Prov;
-import arc.util.Log;
 import arc.util.Reflect;
 import mindurka.MVars;
 import mindustry.Vars;

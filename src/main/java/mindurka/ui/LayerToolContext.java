@@ -169,6 +169,11 @@ public class LayerToolContext implements ToolContext {
     }
 
     @Override
+    public boolean isErase() {
+        return false;
+    }
+
+    @Override
     public boolean unsizedBlocks() {
         return false;
     }

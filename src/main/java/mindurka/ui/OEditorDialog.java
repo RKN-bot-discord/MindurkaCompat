@@ -354,6 +354,11 @@ public class OEditorDialog extends MapEditorDialog {
                         if (EditorTool.fortsPlotToggle.visibleIf.get()) addTool.get(EditorTool.fortsPlotToggle);
                         if (EditorTool.fortsPlotCarver.visibleIf.get()) addTool.get(EditorTool.fortsPlotCarver);
                     }
+
+                    if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.hub) {
+                        tools.row();
+                        addTool.get(EditorTool.hubServerConfig);
+                    }
                 };
                 refreshTools.run();
 

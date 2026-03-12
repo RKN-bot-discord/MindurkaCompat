@@ -14,9 +14,13 @@ import mindurka.rules.Forts;
 import mindurka.rules.FortsPlotState;
 import mindurka.rules.Gamemode;
 import mindurka.rules.Gamemodes;
+import mindurka.rules.Hub;
 import mindustry.Vars;
+import mindustry.content.Blocks;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
+
+import java.util.Iterator;
 
 public enum EditorTool {
     // How we assign default tool keys:
@@ -34,6 +38,7 @@ public enum EditorTool {
             MVars.mapView.mouseAction(MouseAction.Drag.begin(MVars.mapView.mousex(), MVars.mapView.mousey()));
         }
     },
+    // FIXME: Replace with eraser state.
     eraser(KeyCode.unset) { // Only useful on mobile. Use right click.
         @Override
         public void start(ToolContext ctx) {
@@ -212,6 +217,7 @@ public enum EditorTool {
         {
             lockedBehind = Gamemodes.hub;
             blockTool = false;
+            draggable = Drag.Line;
         }
 
         @Override
@@ -222,6 +228,37 @@ public enum EditorTool {
             table.field(MVars.toolOptions.hubServer, text -> {
                 MVars.toolOptions.hubServer = text;
             }).growX().left().row();
+        }
+
+        @Override
+        public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) {
+            int size = Math.min(Math.abs(x1 - x2), Math.abs(y1 - y2));
+            int dx = Integer.compare(x2, x1);
+            int dy = Integer.compare(y2, y1);
+
+            // This is on purpose, yes.
+            if (ctx.isErase()) {
+                a: while (true) {
+                    for (Iterator<Hub.Server> it = ((Hub.Impl) MVars.rules.gamemode()).servers(); it.hasNext();) {
+                        Hub.Server server = it.next();
+                        if (server.contains(x1, y1)) {
+                            ((Hub.Impl) MVars.rules.gamemode()).remServer(server);
+                            continue a;
+                        }
+                    }
+                    break;
+                }
+            } else {
+                if (ctx.isLayer()) {
+                    Hub.Server server = new Hub.Server(MVars.toolOptions.hubServer, Math.min(x1, x2), Math.min(y1, y2), size + 1);
+                    ((Hub.Impl) MVars.rules.gamemode()).addServer(server);
+                } else for (int i = 0; i <= size; i++) for (int o = 0; o <= size; o++) {
+                    int x = x1 + i * dx;
+                    int y = y1 + o * dy;
+
+                    ctx.setBlock(x, y, Blocks.tileLogicDisplay);
+                }
+            }
         }
     },
 
@@ -258,10 +295,6 @@ public enum EditorTool {
         return defaultKey;
     }
 
-    public void preview(int x, int y) {}
-    public void preview(int x1, int y1, int x2, int y2) {
-        preview(x2, y2);
-    }
     public void start(ToolContext ctx) {}
     public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {}
     public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) { touched(ctx, x2, y2, x2, y2); }

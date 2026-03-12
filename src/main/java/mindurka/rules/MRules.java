@@ -41,6 +41,7 @@ public class MRules {
         {
             @Nullable String format = rules.tags.get(FORMAT);
             if (format == null) {
+                legacyServer = true;
                 return;
             }
             if (!format.equals(FORMAT_VER)) {
@@ -53,11 +54,13 @@ public class MRules {
 
         {
             @Nullable String gamemodeName = rules.tags.get(GAMEMODE);
+            legacyServer = false;
             if (gamemodeName == null) {
                 gamemodeName = rules.tags.get(GAMEMODE_LEGACY);
                 rules.tags.put(GAMEMODE, gamemodeName);
             }
             if (gamemodeName == null) {
+                legacyServer = true;
                 Vars.ui.showErrorMessage("MindurkaCompat: Format version 1 requires gamemode to be specified.");
                 return;
             }
@@ -90,6 +93,9 @@ public class MRules {
             gamemode = null;
         }
     }
+
+    private boolean legacyServer = false;
+    public boolean legacyServer() { return legacyServer; }
 
     private @Nullable Gamemode.Impl gamemode;
     public @Nullable Gamemode.Impl gamemode() { return gamemode; }

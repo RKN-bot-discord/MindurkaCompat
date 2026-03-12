@@ -28,7 +28,7 @@ public class Injects {
         Vars.content.blocks().each(x -> x instanceof OverdriveProjector, x -> x.buildType = () -> ((OverdriveProjector) x).new OverdriveBuild() {
             @Override
             public void updateConsumption() {
-                if (this.block.hasConsumers && (!this.cheating() || MVars.rules.overdriveIgnoresCheat())) {
+                if (this.block.hasConsumers && (!this.cheating() || (MVars.rules.overdriveIgnoresCheat() && !MVars.rules.legacyServer()))) {
                     if (!this.enabled) {
                         this.potentialEfficiency = this.efficiency = this.optionalEfficiency = 0.0F;
                         this.shouldConsumePower = false;

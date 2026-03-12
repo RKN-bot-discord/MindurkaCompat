@@ -1,7 +1,6 @@
 package mindurka;
 
 import arc.struct.ByteSeq;
-import arc.util.Log;
 
 import java.nio.ByteBuffer;
 

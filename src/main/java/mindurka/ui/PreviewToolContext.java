@@ -114,6 +114,11 @@ public class PreviewToolContext implements ToolContext {
     }
 
     @Override
+    public boolean isErase() {
+        return false;
+    }
+
+    @Override
     public boolean unsizedBlocks() {
         return false;
     }

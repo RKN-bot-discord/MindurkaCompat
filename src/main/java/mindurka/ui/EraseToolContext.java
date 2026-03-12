@@ -155,6 +155,11 @@ public class EraseToolContext implements ToolContext {
     }
 
     @Override
+    public boolean isErase() {
+        return true;
+    }
+
+    @Override
     public boolean unsizedBlocks() {
         return false;
     }

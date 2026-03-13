@@ -210,7 +210,6 @@ public class Protocol {
                 crc.update(Base64Coder.decode(uuid), 0, b.length);
                 dataStream.writeLong(crc.getValue());
 
-                dataStream.writeUTF(uuid);
                 dataStream.writeUTF(locale);
                 dataStream.close();
 

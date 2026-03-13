@@ -276,7 +276,7 @@ public class Schematic {
 
             tile.setPackedData(this.data[idx]);
             if (options.updateNet && dataChanged) {
-                ByteBuffer buf = ByteBuffer.allocateDirect(16);
+                ByteBuffer buf = ByteBuffer.wrap(new byte[16]);
                 buf.putInt(0, x + dx);
                 buf.putInt(4, y + dy);
                 buf.putLong(8, this.data[idx]);

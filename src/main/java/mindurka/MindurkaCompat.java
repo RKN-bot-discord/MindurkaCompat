@@ -3,11 +3,14 @@ package mindurka;
 import arc.Core;
 import arc.Events;
 import arc.util.Log;
+import arc.util.Nullable;
 import arc.util.Reflect;
 import mindurka.rules.MRules;
 import mindurka.util.Report;
 import mindustry.Vars;
 import mindustry.game.EventType;
+import mindustry.mod.Mod;
+import mindustry.mod.Mods;
 
 public class MindurkaCompat {
     private MindurkaCompat() {}
@@ -28,7 +31,8 @@ public class MindurkaCompat {
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {
-            MVars.patchEditorLoaded = Vars.mods.getMod("patch-editor") != null;
+            @Nullable Mods.LoadedMod patchEditor = Vars.mods.getMod("patch-editor");
+            MVars.patchEditorLoaded = patchEditor != null && patchEditor.enabled();
 
             MIcons.load();
             if (MVars.patchEditorLoaded) {

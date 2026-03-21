@@ -1,5 +1,6 @@
 package mindurka.util;
 
+import arc.util.Log;
 import arc.util.Strings;
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +35,7 @@ public class StringRead implements Read<FormatException> {
             seek += 2;
             return 0;
         }
-        long val = Strings.parseLong(source, 10, 0, seek, seek + length);
+        long val = Strings.parseLong(source, 10, seek, seek + length, 0);
         if (val == 0) throw new FormatException("Not an integer");
         seek += length + 1;
         return val;

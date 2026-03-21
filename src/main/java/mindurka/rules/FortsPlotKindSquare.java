@@ -19,22 +19,55 @@ public class FortsPlotKindSquare extends FortsPlotKind {
     public static final String SHIFT_X = PREFIX+".shift_x";
     public static final String SHIFT_Y = PREFIX+".shift_y";
     public static final String DATA = PREFIX+".states";
+    public static final String SCHEMATIC_HEAD = PREFIX+".schematic.";
+    public static final int SCHEMATIC_HEAD_END = SCHEMATIC_HEAD.length();
     public static boolean keyIsSchematic(String key) {
-        if (!key.startsWith(PREFIX+".schematic.")) return false;
-        int pos = PREFIX.length() + ".schematic.".length();
-        if (pos == key.length()) return false;
+        if (!key.startsWith(SCHEMATIC_HEAD)) return false;
+        char c;
+        switch (key.length() - SCHEMATIC_HEAD_END) {
+            case 1:
+                c = key.charAt(SCHEMATIC_HEAD_END);
+                return c >= '0' && c <= '9';
+            case 2:
+                c = key.charAt(SCHEMATIC_HEAD_END);
+                if (c < '1' || c > '9') return false;
+                c = key.charAt(SCHEMATIC_HEAD_END + 1);
+                return c >= '0' && c <= '9';
+            case 3:
+                c = key.charAt(SCHEMATIC_HEAD_END);
+                if (c < '1' || c > '2') return false;
+                if (c == '2') {
+                    c = key.charAt(SCHEMATIC_HEAD_END + 1);
+                    if (c < '0' || c > '5') return false;
+                    if (c == '5') {
+                        c = key.charAt(SCHEMATIC_HEAD_END + 2);
+                        return c >= '0' && c <= '5';
+                    } else {
+                        c = key.charAt(SCHEMATIC_HEAD_END + 2);
+                        return c >= '0' && c <= '9';
+                    }
+                } else {
+                    c = key.charAt(SCHEMATIC_HEAD_END + 1);
+                    if (c < '0' || c > '9') return false;
+                    c = key.charAt(SCHEMATIC_HEAD_END + 2);
+                    return c >= '0' && c <= '9';
+                }
+            default: return false;
+        }
+        // int pos = PREFIX.length() + ".schematic.".length();
+        // if (pos == key.length()) return false;
 
-        int idxs = key.length() - pos;
+        // int idxs = key.length() - pos;
 
-        if (idxs > 3) return false;
+        // if (idxs > 3) return false;
 
-        if (idxs <= 2 && (key.charAt(pos) < '0' || key.charAt(pos) > '9')) return false;
-        else if (key.charAt(pos) < '1' || key.charAt(pos) > '2') return false;
+        // if (idxs <= 2 && (key.charAt(pos) < '0' || key.charAt(pos) > '9')) return false;
+        // else if (key.charAt(pos) < '1' || key.charAt(pos) > '2') return false;
 
-        if (idxs != 1 && key.charAt(pos) == '0') return false;
+        // if (idxs != 1 && key.charAt(pos) == '0') return false;
 
-        if (idxs >= 2 && (key.charAt(pos + 1) < '0' || key.charAt(pos + 1) > '9')) return false;
-        return idxs != 3 || (key.charAt(pos + 2) >= '0' && key.charAt(pos + 2) <= '9');
+        // if (idxs >= 2 && (key.charAt(pos + 1) < '0' || key.charAt(pos + 1) > '9')) return false;
+        // return idxs != 3 || (key.charAt(pos + 2) >= '0' && key.charAt(pos + 2) <= '9');
     }
     public static String keySchematic(Team team) {
         return PREFIX+".schematic."+team.id;

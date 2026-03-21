@@ -91,12 +91,19 @@ public class FortsPlotKindSquare extends FortsPlotKind {
 
         @Override
         public void onStart() {
+            if (Vars.net.server()) return;
+
             plotStates.placeDefaultPlots(this::plotSchematic);
         }
 
         @Override
         public void editingResumed() {
             plotStates.removeAllPlots();
+        }
+
+        @Override
+        public void save() {
+            plotStates.save();
         }
 
         private int size;
@@ -147,7 +154,8 @@ public class FortsPlotKindSquare extends FortsPlotKind {
                 plotSchematic.remove(team.id);
             }
             else {
-                plotSchematic.put(team.id,  value);
+                Log.info("Writing schematic for team "+team.name+", size=("+value.width+"x"+value.height+")");
+                plotSchematic.put(team.id, value);
                 try (TagWrite write = TagWrite.of(rc.rules)) { write.w(keySchematic(team), value); }
             }
             return this;

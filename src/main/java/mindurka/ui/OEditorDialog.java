@@ -70,6 +70,7 @@ public class OEditorDialog extends MapEditorDialog {
     private final OMapView view;
     private final OMapEditor editor;
     private MapInfoDialog infoDialog;
+    public boolean loading = false;
     private final MapLoadDialog loadDialog = new MapLoadDialog(map -> Vars.ui.loadAnd(() -> {
         try {
             MVars.mapEditor.OBeginEdit(map);
@@ -81,6 +82,7 @@ public class OEditorDialog extends MapEditorDialog {
     private BaseDialog menu;
 
     private Rules lastSavedRules = null;
+    private MRules lastSavedMRules = null;
     private boolean reloadMap = false;
     private boolean shownWithMap = false;
     private Map map;
@@ -167,22 +169,26 @@ public class OEditorDialog extends MapEditorDialog {
     }
 
     public void resumeEditing() {
+        loading = true;
         Vars.state.set(GameState.State.menu);
         shownWithMap = true;
         reloadMap = false;
         show();
-        if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
+        MVars.rules = (lastSavedMRules == null ? new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height()) : lastSavedMRules);
+        if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
         lastSavedRules = null;
-        // MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
-        // saved = false;
+        lastSavedMRules = null;
         Reflect.invoke(EditorRenderer.class, editor.renderer, "recache", Util.noargs);
+        loading = false;
     }
 
     private void editInGame() {
+        loading = true;
         menu.hide();
         Vars.ui.loadAnd(() -> {
             lastSavedRules = Vars.state.rules;
+            lastSavedMRules = MVars.rules;
             hide();
             //only reset the player; logic.reset() will clear entities, which we do not want
             Vars.state.teams = new Teams();
@@ -224,6 +230,7 @@ public class OEditorDialog extends MapEditorDialog {
 
             Core.camera.position.set(unit.x, unit.y);
         });
+        loading = false;
     }
 
     @Override

@@ -210,6 +210,11 @@ public enum EditorTool {
                 }
             }).growX().left().row();
         }
+
+        @Override
+        public void stopped(ToolContext ctx) {
+            ((Forts.Impl) MVars.rules.gamemode()).plotKind().save();
+        }
     },
 
     // Hub tools.
@@ -298,6 +303,7 @@ public enum EditorTool {
     public void start(ToolContext ctx) {}
     public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {}
     public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) { touched(ctx, x2, y2, x2, y2); }
+    public void stopped(ToolContext ctx) {}
 
     public void toolOptions(Table table) {}
 

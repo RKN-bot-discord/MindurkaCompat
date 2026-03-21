@@ -1,6 +1,7 @@
 package mindurka.util;
 
 import arc.struct.Seq;
+import arc.util.Log;
 import lombok.AllArgsConstructor;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -118,10 +119,17 @@ public class Schematic {
 
     public static Schematic of(Tiles tiles, int x, int y, int w, int h) { return of(tiles, x, y, w, h, DEFAULT); }
     public static Schematic of(Tiles tiles, int x, int y, int w, int h, Options options) {
-        if (x >= tiles.width || y >= tiles.height) return EMPTY;
+        // Log.info("x="+x+", y="+y+", w="+w+", h="+h);
+        if (x >= tiles.width || y >= tiles.height) {
+            Log.warn("Not enough space for scheme! Returning an empty one.");
+            return EMPTY;
+        }
         w = Math.min(tiles.width - x, w);
         h = Math.min(tiles.height - y, h);
-        if (w == 0 || h == 0) return EMPTY;
+        if (w == 0 || h == 0) {
+            Log.warn("Not enough space for scheme! Returning an empty one.");
+            return EMPTY;
+        }
 
         Schematic schematic = new Schematic(w, h);
         int cursor = 0;

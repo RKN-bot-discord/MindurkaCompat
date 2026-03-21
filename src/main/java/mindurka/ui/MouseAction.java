@@ -3,9 +3,14 @@ package mindurka.ui;
 import arc.Core;
 import arc.math.Mathf;
 import arc.math.geom.Point2;
+import arc.util.Log;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import mindurka.MVars;
+import mindustry.Vars;
+import mindustry.content.Blocks;
+import mindustry.world.Tile;
 
 public abstract class MouseAction {
     void move(float mouseX, float mouseY) {}
@@ -52,6 +57,7 @@ public abstract class MouseAction {
                 p = MVars.mapView.project(mouseX, mouseY);
                 tool.touchedLine(LayerToolContext.i, sx, sy, p.x, p.y);
             }
+            tool.stopped(LayerToolContext.i);
         }
     }
 
@@ -94,13 +100,19 @@ public abstract class MouseAction {
                 p = MVars.mapView.project(mouseX, mouseY);
                 tool.touchedLine(EraseToolContext.i, sx, sy, p.x, p.y);
             }
+            tool.stopped(EraseToolContext.i);
         }
     }
 
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
     static class Drag extends MouseAction {
         private float mouseX;
         private float mouseY;
+        private int moving = 0;
+
+        private Drag(float mouseX, float mouseY) {
+            this.mouseX = mouseX;
+            this.mouseY = mouseY;
+        }
 
         public static Drag begin(float mouseX, float mouseY) {
             return new Drag(mouseX, mouseY);
@@ -108,6 +120,7 @@ public abstract class MouseAction {
 
         @Override
         void move(float newX, float newY) {
+            moving++;
             MVars.mapView.moveByScaled(newX - mouseX, newY - mouseY);
             mouseX = newX;
             mouseY = newY;
@@ -116,6 +129,22 @@ public abstract class MouseAction {
         @Override
         void update() {
             if (Core.input.ctrl()) MVars.mapView.mouseAction(CtrlZoom.begin(mouseY));
+        }
+
+        @Override
+        void end(float mouseX, float mouseY) {
+            if (moving > 1) return;
+
+            Point2 point = MVars.mapView.project(mouseX, mouseY);
+            if (point.x < 0 || point.y < 0) return;
+            if (point.x >= Vars.world.width() || point.y >= Vars.world.width()) return;
+            Tile tile = Vars.world.tile(point.x, point.y);
+
+            if (tile.block() != Blocks.air) MVars.toolOptions.selectedBlock = tile.block();
+            else if (tile.overlay() != Blocks.air) MVars.toolOptions.selectedBlock = tile.overlay();
+            else MVars.toolOptions.selectedBlock = tile.floor();
+
+            if (tile.build != null) MVars.toolOptions.team = tile.team();
         }
     }
 

@@ -59,11 +59,25 @@ public enum FortsPlotState {
         return color;
     }
 
+    /** Check if scheme needs to be placed. */
+    public boolean placeTemplate() {
+        switch (this) {
+            case placed:
+            case locked:
+            case static_:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /** Check if plot is considered "placed". */
     public boolean placed() {
         switch (this) {
             case placed:
             case locked:
             case static_:
+            case ghost:
                 return true;
             default:
                 return false;

@@ -16,7 +16,8 @@ import mindustry.graphics.Pal;
 
 @RequiredArgsConstructor
 public class SchematicEditorAction implements SpecialEditorAction {
-    private static final Schematic.Options OPTIONS = new Schematic.Options().skipEmpty().skipAir();
+    // TODO: Make it configurable.
+    private static final Schematic.Options OPTIONS = new Schematic.Options().skipEmpty().skipAir().skipBuildings();
 
     private final int width, height;
     private final Cons<Schematic> accepted;

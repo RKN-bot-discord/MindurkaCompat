@@ -9,7 +9,6 @@ import mindurka.rules.MRules;
 import mindurka.util.Report;
 import mindustry.Vars;
 import mindustry.game.EventType;
-import mindustry.mod.Mod;
 import mindustry.mod.Mods;
 
 public class MindurkaCompat {
@@ -48,13 +47,6 @@ public class MindurkaCompat {
                     }
                 }));
             } else Injects.load();
-
-            try {
-
-            } catch (Exception e) {
-                Log.err("Test failed", e);
-                Vars.ui.showException("Test failed", e);
-            }
         });
     }
 }

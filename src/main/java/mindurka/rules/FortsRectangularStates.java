@@ -7,13 +7,17 @@ import arc.graphics.g2d.Fill;
 import arc.graphics.g2d.Lines;
 import arc.math.geom.Vec2;
 import arc.scene.ui.layout.Scl;
+import arc.struct.ByteSeq;
 import arc.struct.IntMap;
+import arc.util.Log;
 import mindurka.MVars;
 import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.game.Team;
+import net.jpountz.lz4.LZ4Factory;
 
 import java.util.Arrays;
+import java.util.Base64;
 
 public class FortsRectangularStates {
     private final Color fillColor = new Color();
@@ -56,27 +60,68 @@ public class FortsRectangularStates {
         this.width = width;
         this.height = height;
 
-        if (statesData.length() != states.length * 3) return;
-        for (int i = 0; i < states.length; i++) {
-            char ch = statesData.charAt(i * 3);
-            if (ch < 'a' || ch - 'a' >= FortsPlotState.values().length) return;
+        if (statesData.startsWith("x0")) {
+            try {
+                byte[] data = LZ4Factory.fastestInstance().safeDecompressor().decompress(Base64.getDecoder().decode(statesData.substring(2)), 1024 * 64);
+                int ptr = 0;
 
-            char a = statesData.charAt(i * 3 + 1);
-            char b = statesData.charAt(i * 3 + 2);
+                for (int i = 0; i < states.length; i++) {
+                    int ordinal = data[ptr++] & 0xff;
+                    if (ordinal >= FortsPlotState.values().length) {
+                        Log.warn("Invalid plot state! ("+ordinal+" >= "+FortsPlotState.values().length+")");
+                        Arrays.fill(states, FortsPlotState.enabled);
+                        Arrays.fill(teams, Team.derelict);
+                        return;
+                    }
+                    states[i] = FortsPlotState.values()[ordinal];
+                    if (states[i].placed()) teams[i] = Team.all[data[ptr++] & 0xff];
+                }
 
-            if (!(a >= '0' && a <= '9') && !(a >= 'a' && a <= 'f')) return;
-            if (!(b >= '0' && b <= '9') && !(b >= 'a' && b <= 'f')) return;
-        }
-        for (int i = 0; i < states.length; i++) {
-            char ch = statesData.charAt(i * 3);
-            states[i] = FortsPlotState.values()[ch - 'a'];
+                if (ptr != data.length) {
+                    Log.warn("Invalid plot states format! Did not reach the end of data.");
+                    Arrays.fill(states, FortsPlotState.enabled);
+                    Arrays.fill(teams, Team.derelict);
+                }
+            } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
+                Log.warn("Invalid plot states format!");
+                Arrays.fill(states, FortsPlotState.enabled);
+                Arrays.fill(teams, Team.derelict);
+            }
+        } else {
+            if (statesData.length() != states.length * 3) {
+                Log.warn("Incorrect plot states length! ("+statesData.length()+" vs "+(states.length * 3)+")");
+                return;
+            }
+            for (int i = 0; i < states.length; i++) {
+                char ch = statesData.charAt(i * 3);
+                if (ch < 'a' || ch - 'a' >= FortsPlotState.values().length) {
+                    Log.warn("Invalid plot state at position "+(i * 3)+"!");
+                    return;
+                }
 
-            char a = statesData.charAt(i * 3 + 1);
-            char b = statesData.charAt(i * 3 + 2);
+                char a = statesData.charAt(i * 3 + 1);
+                char b = statesData.charAt(i * 3 + 2);
 
-            int team = ((a >= '0' && a <= '9') ? a - '0' : a - 'a' + 10) * 16 +
-                    ((b >= '0' && b <= '9') ? b - '0' : b - 'a' + 10);
-            teams[i] = Team.all[team];
+                if (!(a >= '0' && a <= '9') && !(a >= 'a' && a <= 'f')) {
+                    Log.warn("Invalid hexadecimal at position "+(i * 3 + 1)+"!");
+                    return;
+                }
+                if (!(b >= '0' && b <= '9') && !(b >= 'a' && b <= 'f')) {
+                    Log.warn("Invalid hexadecimal at position "+(i * 3 + 2)+"!");
+                    return;
+                }
+            }
+            for (int i = 0; i < states.length; i++) {
+                char ch = statesData.charAt(i * 3);
+                states[i] = FortsPlotState.values()[ch - 'a'];
+
+                char a = statesData.charAt(i * 3 + 1);
+                char b = statesData.charAt(i * 3 + 2);
+
+                int team = ((a >= '0' && a <= '9') ? a - '0' : a - 'a' + 10) * 16 +
+                        ((b >= '0' && b <= '9') ? b - '0' : b - 'a' + 10);
+                teams[i] = Team.all[team];
+            }
         }
     }
 
@@ -122,18 +167,35 @@ public class FortsRectangularStates {
     }
 
     public String save() {
-        StringBuilder str = new StringBuilder(states.length * 3);
+        // Plots format v2:
+        // - Compressed
+        // - Doesn't save useless data
+        // You may not be able to know from the length if data is valid, but honestly who cares.
+        ByteSeq data = new ByteSeq();
+
         for (int i = 0; i < states.length; i++) {
-            str.append((char) ('a' + states[i].ordinal()));
-
-            int b = teams[i].id;
-            int a = b / 16;
-            b %= 16;
-
-            str.append((char) (a >= 10 ? a + 'a' - 10 : a + '0'));
-            str.append((char) (b >= 10 ? b + 'a' - 10 : b + '0'));
+            FortsPlotState state = states[i];
+            data.add((byte) state.ordinal());
+            if (state.placed()) {
+                data.add((byte) teams[i].id);
+            }
         }
-        return str.toString();
+
+        // Marvelous.
+        return "x0" + Base64.getEncoder().withoutPadding().encodeToString(LZ4Factory.fastestInstance().highCompressor().compress(data.items, 0, data.size));
+
+        // StringBuilder str = new StringBuilder(states.length * 3);
+        // for (int i = 0; i < states.length; i++) {
+        //     str.append((char) ('a' + states[i].ordinal()));
+
+        //     int b = teams[i].id;
+        //     int a = b / 16;
+        //     b %= 16;
+
+        //     str.append((char) (a >= 10 ? a + 'a' - 10 : a + '0'));
+        //     str.append((char) (b >= 10 ? b + 'a' - 10 : b + '0'));
+        // }
+        // return str.toString();
     }
 
     public boolean placePlot(Team team, Schematic scheme, int x, int y) {
@@ -153,21 +215,41 @@ public class FortsRectangularStates {
         return true;
     }
     boolean placePlotNoOverride(Team team, Schematic scheme, int x, int y, boolean ignoreAdjacent) {
-        if (scheme.width != width + wallSize * 2 || scheme.height != height + wallSize * 2) return false;
-        if (x < startX || y < startY) return false;
+        if (scheme.width != width + wallSize * 2 || scheme.height != height + wallSize * 2) {
+            Log.warn("Could not place plot scheme! (size; "+scheme.width+"x"+scheme.height+" vs "+(width + wallSize * 2)+"x"+(height + wallSize * 2)+")");
+            return false;
+        }
+        if (x < startX || y < startY) {
+            Log.warn("Could not place plot scheme! (start; "+x+" < "+startX+" or "+y+" < "+startY+")");
+            return false;
+        }
         int plotX = (x - startX) / jX;
         int plotY = (y - startY) / jY;
-        if (plotX >= plotsX || plotY >= plotsY) return false;
-        if ((x - startX) % jX >= width || (y - startY) % jY >= height) return false;
+        if (plotX >= plotsX || plotY >= plotsY) {
+            Log.warn("Could not place plot scheme! (plots; "+plotX+" >= "+plotsX+" or "+plotY+" >= "+plotsY+")");
+            return false;
+        }
+        if ((x - startX) % jX >= width || (y - startY) % jY >= height) {
+            int vx = (x - startX) % jX;
+            int vy = (y - startY) % jY;
+            Log.warn("Could not place plot scheme! (start; "+vx+" >= "+width+" or "+vy+" >= "+height+")");
+            return false;
+        }
 
         int i = plotX + plotY * plotsX;
-        if (centerParts != null && centerParts.containsKey(i)) return false;
+        if (centerParts != null && centerParts.containsKey(i)) {
+            Log.warn("Could not place plot scheme! Center part is already placed");
+            return false;
+        }
         if (!ignoreAdjacent) {
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) {
                 if (dx + plotX < 0 || dy + plotY < 0) continue;
                 if (dx + plotX >= plotsX || dy + plotY >= plotsY) continue;
                 int nx = dx + plotX + (dy + plotY) * plotsY;
-                if (states[nx].placed() && team != teams[nx]) return false;
+                if (states[nx].placeTemplate() && team != teams[nx]) {
+                    Log.warn("Could not place plot scheme! There is an enemy plot at ("+plotX+"x"+plotY+")");
+                    return false;
+                }
             }
         }
 
@@ -248,12 +330,18 @@ public class FortsRectangularStates {
     // }
 
     public void placeDefaultPlots(Func<Team, Schematic> scheme) {
+        // Log.info("Trying to place default plots ("+plotsY+"x"+plotsY+")");
         for (int x = 0; x < plotsX; x++) for (int y = 0; y < plotsY; y++) {
             int i = x + y * plotsX;
-            Team team = teams[i];
-            Schematic schem = scheme.get(team);
-            if (schem == null) return;
-            if (states[i].placed()) placePlotNoOverride(teams[i], schem, startX + x * jX, startY + y * jY, true);
+            if (states[i].placeTemplate()) {
+                Team team = teams[i];
+                Schematic schem = scheme.get(team);
+                if (schem == null) {
+                    Log.warn("There is no plot scheme for "+team.name+"!");
+                    continue;
+                }
+                placePlotNoOverride(teams[i], schem, startX + x * jX, startY + y * jY, true);
+            }
         }
     }
 

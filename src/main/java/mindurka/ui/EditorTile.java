@@ -166,6 +166,6 @@ public class EditorTile extends Tile {
     }
 
     private boolean skip() {
-        return Vars.state.isGame() || MVars.mapEditor.isLoading() || Vars.world.isGenerating();
+        return Vars.state.isGame() || MVars.mapEditor.isLoading() || Vars.world.isGenerating() || MVars.editorDialog.loading;
     }
 }

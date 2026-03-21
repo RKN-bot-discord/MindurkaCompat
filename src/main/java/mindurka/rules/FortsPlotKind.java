@@ -24,6 +24,7 @@ public abstract class FortsPlotKind {
         public abstract void setPlotInfo(int x, int y, FortsPlotState state, Team team);
         public abstract void onStart();
         public abstract void editingResumed();
+        public abstract void save();
     }
 
     public abstract String name();
@@ -54,6 +55,7 @@ public abstract class FortsPlotKind {
                             @Override public void setPlotInfo(int x, int y, FortsPlotState state, Team team) {}
                             @Override public void onStart() {}
                             @Override public void editingResumed() {}
+                            @Override public void save() {}
                         };
                     }
                 },

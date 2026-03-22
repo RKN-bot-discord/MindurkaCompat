@@ -12,6 +12,7 @@ import arc.func.Intc;
 import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
+import arc.math.geom.Point2;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.ButtonGroup;
@@ -279,6 +280,265 @@ public class RulesWrite {
     }
     public IntCtl i(String tlKey, Intp def, Intc onClick) {
         return w(tlKey, def, onClick);
+    }
+
+    public static class PointCtl {
+        public static final PointCtl throwaway = new PointCtl();
+
+        public Boolp enabled = TRUE;
+        public PointCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+
+        int _prevX, _prevY;
+    }
+    public PointCtl point(String tlKey, Prov<Point2> def, Cons<Point2> onClick) {
+        if (!shouldAdd(tlKey)) return PointCtl.throwaway;
+
+        final PointCtl ctl = new PointCtl();
+        ctl._prevX = def.get().x;
+        ctl._prevY = def.get().y;
+
+        Cell<Table> cell = root.table(t -> {
+            t.left();
+            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            t.field(ctl._prevX + "", s -> {
+                        int v = Strings.parseInt(s);
+                        ctl._prevX = v;
+                        onClick.get(new Point2(ctl._prevX, ctl._prevY));
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        int v = def.get().x;
+                        if (ctl._prevX != v) { ctl._prevX = v; a.setText(v + ""); }
+                    }).marginTop(0).marginBottom(0)
+                    .valid(f -> Strings.canParseInt(f)).width(80f).left();
+            t.add("  ").padLeft(2).padRight(2);
+            t.field(ctl._prevY + "", s -> {
+                        int v = Strings.parseInt(s);
+                        ctl._prevY = v;
+                        onClick.get(new Point2(ctl._prevX, ctl._prevY));
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        int v = def.get().y;
+                        if (ctl._prevY != v) { ctl._prevY = v; a.setText(v + ""); }
+                    }).marginTop(0).marginBottom(0)
+                    .valid(f -> Strings.canParseInt(f)).width(80f).left();
+        }).padTop(0);
+        cell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
+    }
+
+    public static class PointsCtl {
+        public static final PointsCtl throwaway = new PointsCtl();
+
+        public Boolp enabled = TRUE;
+        public PointsCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+    }
+    public PointsCtl points(String tlKey, Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
+        if (!shouldAdd(tlKey)) return PointsCtl.throwaway;
+
+        final PointsCtl ctl = new PointsCtl();
+        final Seq<Point2> current = new Seq<>(def.get());
+        final Table[] rowsTable = {null};
+
+        Cell<Table> outerCell = root.table(outer -> {
+            outer.left();
+            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            outer.table(inner -> {
+                rowsTable[0] = inner;
+                rebuildPointRows(inner, current, ctl, def, onClick);
+            }).left();
+        }).padTop(0);
+        outerCell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
+    }
+
+    private void rebuildPointRows(Table t, Seq<Point2> current, PointsCtl ctl,
+                                   Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
+        t.clear();
+        t.defaults().left();
+
+        // + always visible, even when list is empty
+        t.button("+", () -> {
+            current.add(new Point2(-1, -1));
+            onClick.get(new Seq<>(current));
+            rebuildPointRows(t, current, ctl, def, onClick);
+        }).size(32f).padBottom(2).left().row();
+
+        for (int idx = 0; idx < current.size; idx++) {
+            final int i = idx;
+            final int[] prev = {current.get(i).x, current.get(i).y};
+
+            t.table(row -> {
+                row.add().size(32f).padRight(4); // spacer to align with + above
+
+                row.field(prev[0] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[0] = v;
+                            current.set(i, new Point2(v, current.get(i).y));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<Point2> d = def.get();
+                            if (i < d.size && d.get(i).x != prev[0]) {
+                                prev[0] = d.get(i).x;
+                                a.setText(prev[0] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+                row.add("  ").padLeft(2).padRight(2);
+                row.field(prev[1] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[1] = v;
+                            current.set(i, new Point2(current.get(i).x, v));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<Point2> d = def.get();
+                            if (i < d.size && d.get(i).y != prev[1]) {
+                                prev[1] = d.get(i).y;
+                                a.setText(prev[1] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+                row.button("-", () -> {
+                    current.remove(i);
+                    onClick.get(new Seq<>(current));
+                    rebuildPointRows(t, current, ctl, def, onClick);
+                }).size(32f).padLeft(4).left();
+            }).left().row();
+        }
+    }
+
+    public PointsCtl platformSources(String tlKey,
+                                      Prov<Seq<mindurka.rules.Castle.PlatformEntry>> def,
+                                      Cons<Seq<mindurka.rules.Castle.PlatformEntry>> onClick) {
+        if (!shouldAdd(tlKey)) return PointsCtl.throwaway;
+
+        final PointsCtl ctl = new PointsCtl();
+        final Seq<mindurka.rules.Castle.PlatformEntry> current = new Seq<>(def.get());
+        final Table[] rowsTable = {null};
+
+        Cell<Table> outerCell = root.table(outer -> {
+            outer.left();
+            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            outer.table(inner -> {
+                rowsTable[0] = inner;
+                rebuildPlatformRows(inner, current, ctl, def, onClick, tlKey);
+            }).left();
+        }).padTop(0);
+        outerCell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
+    }
+
+    private void rebuildPlatformRows(Table t,
+                                      Seq<mindurka.rules.Castle.PlatformEntry> current,
+                                      PointsCtl ctl,
+                                      Prov<Seq<mindurka.rules.Castle.PlatformEntry>> def,
+                                      Cons<Seq<mindurka.rules.Castle.PlatformEntry>> onClick,
+                                      String tlKey) {
+        t.clear();
+        t.defaults().left();
+
+        // + always visible, even when list is empty
+        t.button("+", () -> {
+            current.add(new mindurka.rules.Castle.PlatformEntry(
+                    new Point2(-1, -1), mindustry.content.Blocks.empty));
+            onClick.get(new Seq<>(current));
+            rebuildPlatformRows(t, current, ctl, def, onClick, tlKey);
+        }).size(32f).padBottom(2).left().row();
+
+        for (int idx = 0; idx < current.size; idx++) {
+            final int i = idx;
+            final int[] prev = {current.get(i).pos.x, current.get(i).pos.y};
+
+            t.table(row -> {
+                row.add().size(32f).padRight(4); // spacer to align with + above
+
+                row.field(prev[0] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[0] = v;
+                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
+                                    new Point2(v, current.get(i).pos.y), current.get(i).floor));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<mindurka.rules.Castle.PlatformEntry> d = def.get();
+                            if (i < d.size && d.get(i).pos.x != prev[0]) {
+                                prev[0] = d.get(i).pos.x;
+                                a.setText(prev[0] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+                row.add("  ").padLeft(2).padRight(2);
+                row.field(prev[1] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[1] = v;
+                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
+                                    new Point2(current.get(i).pos.x, v), current.get(i).floor));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<mindurka.rules.Castle.PlatformEntry> d = def.get();
+                            if (i < d.size && d.get(i).pos.y != prev[1]) {
+                                prev[1] = d.get(i).pos.y;
+                                a.setText(prev[1] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+
+                row.button(b -> {
+                    b.left();
+                    b.table(Tex.pane, in -> in.stack(
+                            new Image(Tex.alphaBg),
+                            new Image(new TextureRegionDrawable(
+                                    current.get(i).floor.uiIcon,
+                                    4f / Math.min(current.get(i).floor.uiIcon.width,
+                                            current.get(i).floor.uiIcon.height))) {{
+                                update(() -> {
+                                    if (i < current.size)
+                                        setDrawable(new TextureRegionDrawable(
+                                                current.get(i).floor.uiIcon,
+                                                4f / Math.min(current.get(i).floor.uiIcon.width,
+                                                        current.get(i).floor.uiIcon.height)));
+                                });
+                            }}).grow()).margin(4).size(40).get();
+                }, () -> new BlockSelectDialog("@" + tlKey).show(
+                        block -> block.isFloor(),
+                        block -> {
+                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
+                                    current.get(i).pos, block));
+                            onClick.get(new Seq<>(current));
+                        },
+                        current.get(i).floor
+                )).size(50f).padLeft(4).left();
+
+                row.button("-", () -> {
+                    current.remove(i);
+                    onClick.get(new Seq<>(current));
+                    rebuildPlatformRows(t, current, ctl, def, onClick, tlKey);
+                }).size(32f).padLeft(4).left();
+            }).left().row();
+        }
     }
 
     public static class FloatCtl {

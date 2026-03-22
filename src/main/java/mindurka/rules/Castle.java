@@ -1,6 +1,7 @@
 package mindurka.rules;
 
 import arc.struct.Seq;
+import arc.math.geom.Point2;
 import mindurka.ui.RulesWrite;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
@@ -19,6 +20,13 @@ import mindustry.world.meta.Env;
 import static mindustry.Vars.state;
 
 public class Castle extends Gamemode {
+    /** A single platform source entry: a tile position and the floor block to place. */
+    public static class PlatformEntry {
+        public final Point2 pos;
+        public final Block floor;
+        public PlatformEntry(Point2 pos, Block floor) { this.pos = pos; this.floor = floor; }
+    }
+
     public static final String PREFIX = MRules.PREFIX+".castle";
     public static final String NAME = "castle";
     public static final String TURRET = PREFIX+".turret.";
@@ -35,6 +43,8 @@ public class Castle extends Gamemode {
     public static final String ALLY = ".ally";
     public static final String DELAY = ".delay";
     public static final String UTILS = PREFIX+".utils.";
+    // UTILS_DRILL: fixed key without double-dot (UTILS ends with ".", DRILL starts with ".")
+    public static final String UTILS_DRILL = UTILS + "drill";
 
     @Override
     public String name() {
@@ -57,7 +67,7 @@ public class Castle extends Gamemode {
                 item = read.r(ITEM,Items.copper);
                 unit = read.r(UNIT, UnitTypes.flare);
                 status = read.r(STATUS, StatusEffects.none);
-                drill = read.r(ITEM+item+DRILL, drillGet(item));
+                drill = read.r(UTILS_DRILL, drillGet(item));
                 blockCost = read.r(TURRET+block+COST, -1);
                 unitCost = read.r(UNIT+unit+COST, -1);
                 unitDrop = read.r(UNIT+unit+DROP, -1);
@@ -70,15 +80,15 @@ public class Castle extends Gamemode {
                 statusDelay = read.r(STATUS+status+DELAY,-1);
                 statusCost = read.r(STATUS+status+COST,-1);
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
-                groundSpawn = read.r(UTILS+"groundSpawn","-1 -1");
-                navalSpawn = read.r(UTILS+"navalSpawn","-1 -1");
-                airSpawn = read.r(UTILS+"airSpawn","-1 -1");
+                groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());
+                navalSpawn = read.r(UTILS+"navalSpawn", new Seq<>());
+                airSpawn = read.r(UTILS+"airSpawn", new Seq<>());
                 attackUnitCap = read.r(UTILS+"attackUnitCap",-1);
                 defenseUnitCap = read.r(UTILS+"defenseUnitCap",75);
                 divideCap = read.r(UTILS+"divideCap",true);
                 bettergroundvalid = read.r(UTILS+"bettergroundvalid",true);
                 noplatform = read.r(UTILS+"noplatform",true);
-                platformSource = read.r(UTILS+"platformSource","-1 -1");
+                platformSource = read.rPlatform(UTILS+"platformSource", new Seq<>());
             }
         }
 
@@ -108,9 +118,9 @@ public class Castle extends Gamemode {
             write.b("rules.mindurka.castle.status.ally",this::statusAlly,this::statusAlly);
             write.spacer();
             // TODO: make this is tool instead of this
-            write.s("rules.mindurka.castle.groundSpawn",this::groundSpawn, this::groundSpawn);
-            write.s("rules.mindurka.castle.airSpawn",this::airSpawn, this::airSpawn);
-            write.s("rules.mindurka.castle.navalSpawn",this::navalSpawn, this::navalSpawn);
+            write.points("rules.mindurka.castle.groundSpawn",this::groundSpawn, this::groundSpawn);
+            write.points("rules.mindurka.castle.airSpawn",this::airSpawn, this::airSpawn);
+            write.points("rules.mindurka.castle.navalSpawn",this::navalSpawn, this::navalSpawn);
             write.spacer();
 
             write.i("rules.mindurka.castle.defenseUnitCap",this::defenseUnitCap,this::defenseUnitCap);
@@ -118,7 +128,7 @@ public class Castle extends Gamemode {
             write.b("rules.mindurka.castle.divideCap",this::divideCap,this::divideCap);
             write.spacer();
 
-            write.s("rules.mindurka.castle.platformSource",this::platformSource, this::platformSource);
+            write.platformSources("rules.mindurka.castle.platformSource", this::platformSource, this::platformSource);
             write.spacer();
 
             write.b("rules.mindurka.castle.noplatform", this::noplatform, this::noplatform);
@@ -187,7 +197,7 @@ public class Castle extends Gamemode {
 
         private Block block;
         public Block block() { return block; }
-        public Castle.Impl block(Block value) {
+        public Impl block(Block value) {
             block = value;
             try (TagRead read = TagRead.of(rc.rules)) {
                 blockCost = read.r(TURRET+block+COST, -1);
@@ -198,7 +208,7 @@ public class Castle extends Gamemode {
 
         private int blockCost;
         public int blockCost() { return blockCost; }
-        public Castle.Impl blockCost(int value) {
+        public Impl blockCost(int value) {
             blockCost = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(TURRET+block+COST, value); }
             return this;
@@ -206,13 +216,12 @@ public class Castle extends Gamemode {
 
         private UnitType unit;
         public UnitType unit() { return unit; }
-        public Castle.Impl unit(UnitType value) {
+        public Impl unit(UnitType value) {
             unit = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                unitCost = read.r(UNIT+unit+COST, -1);
-                unitDrop = read.r(UNIT+unit+DROP, -1);
-                unitIncome = read.r(UNIT+unit+INCOME, -1);
-
+                unitCost = read.r(UNIT+value+COST, -1);
+                unitDrop = read.r(UNIT+value+DROP, -1);
+                unitIncome = read.r(UNIT+value+INCOME, -1);
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT, value); }
             return this;
@@ -220,7 +229,7 @@ public class Castle extends Gamemode {
 
         private int unitCost;
         public int unitCost() { return unitCost; }
-        public Castle.Impl unitCost(int value) {
+        public Impl unitCost(int value) {
             unitCost = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT+unit+COST, value); }
             return this;
@@ -228,7 +237,7 @@ public class Castle extends Gamemode {
 
         private int unitIncome;
         public int unitIncome() { return unitIncome; }
-        public Castle.Impl unitIncome(int value) {
+        public Impl unitIncome(int value) {
             unitIncome = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT+unit+INCOME, value); }
             return this;
@@ -236,7 +245,7 @@ public class Castle extends Gamemode {
 
         private int unitDrop;
         public int unitDrop() { return unitDrop; }
-        public Castle.Impl unitDrop(int value) {
+        public Impl unitDrop(int value) {
             unitDrop = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT+unit+DROP, value); }
             return this;
@@ -244,13 +253,13 @@ public class Castle extends Gamemode {
 
         private Item item;
         public Item item() { return item; }
-        public Castle.Impl item(Item value) {
+        public Impl item(Item value) {
             item = value;
             try (TagRead read = TagRead.of(rc.rules)) {
                 itemCost = read.r(ITEM+item+COST, -1);
                 itemInetrval = read.r(ITEM+item+INTERVAL, -1);
                 itemAmount = read.r(ITEM+item+AMOUNT, -1);
-                drill = read.r(ITEM+item+DRILL, drillGet(item));
+                drill = read.r(UTILS_DRILL, drillGet(item));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM, value); }
             return this;
@@ -258,36 +267,36 @@ public class Castle extends Gamemode {
 
         private int itemCost;
         public int itemCost() { return itemCost; }
-        public Castle.Impl itemCost(int value) {
+        public Impl itemCost(int value) {
             itemCost = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+COST, value); }
             return this;
         }
         private int itemInetrval;
         public int itemInetrval() { return itemInetrval; }
-        public Castle.Impl itemInetrval(int value) {
+        public Impl itemInetrval(int value) {
             itemInetrval = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+INTERVAL, value); }
             return this;
         }
         private int itemAmount;
         public int itemAmount() { return itemAmount; }
-        public Castle.Impl itemAmount(int value) {
+        public Impl itemAmount(int value) {
             itemAmount = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+AMOUNT, value); }
             return this;
         }
         private Block drill;
         public Block drill() { return drill; }
-        public Castle.Impl drill(Block value) {
+        public Impl drill(Block value) {
             drill = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+DRILL, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS_DRILL, value); }
             return this;
         }
 
         private StatusEffect status;
         public StatusEffect status() { return status; }
-        public Castle.Impl status(StatusEffect value) {
+        public Impl status(StatusEffect value) {
             status = value;
             try (TagRead read = TagRead.of(rc.rules)) {
                 statusDelay = read.r(STATUS+status+DELAY, -1);
@@ -299,100 +308,100 @@ public class Castle extends Gamemode {
         }
         private int statusDelay;
         public int statusDelay() { return statusDelay; }
-        public Castle.Impl statusDelay(int value) {
+        public Impl statusDelay(int value) {
             statusDelay = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+DELAY, value); }
             return this;
         }
         private int statusCost;
         public int statusCost() { return statusCost; }
-        public Castle.Impl statusCost(int value) {
+        public Impl statusCost(int value) {
             statusCost = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+COST, value); }
             return this;
         }
         private int statusDuration;
         public int statusDuration() { return statusDuration; }
-        public Castle.Impl statusDuration(int value) {
+        public Impl statusDuration(int value) {
             statusDuration = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+DURATION, value); }
             return this;
         }
         private boolean statusAlly;
         public boolean statusAlly() { return statusAlly; }
-        public Castle.Impl statusAlly(boolean value) {
+        public Impl statusAlly(boolean value) {
             statusAlly = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+ALLY, value); }
             return this;
         }
-        private String groundSpawn;
-        public String groundSpawn() { return groundSpawn; }
-        public Castle.Impl groundSpawn(String value) {
+        private Seq<Point2> groundSpawn;
+        public Seq<Point2> groundSpawn() { return groundSpawn; }
+        public Impl groundSpawn(Seq<Point2> value) {
             groundSpawn = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"groundSpawn", value); }
             return this;
         }
-        private String airSpawn;
-        public String airSpawn() { return airSpawn; }
-        public Castle.Impl airSpawn(String value) {
+        private Seq<Point2> airSpawn;
+        public Seq<Point2> airSpawn() { return airSpawn; }
+        public Impl airSpawn(Seq<Point2> value) {
             airSpawn = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"airSpawn", value); }
             return this;
         }
-        private String navalSpawn;
-        public String navalSpawn() { return navalSpawn; }
-        public Castle.Impl navalSpawn(String value) {
+        private Seq<Point2> navalSpawn;
+        public Seq<Point2> navalSpawn() { return navalSpawn; }
+        public Impl navalSpawn(Seq<Point2> value) {
             navalSpawn = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"navalSpawn", value); }
             return this;
         }
         private int defenseUnitCap;
         public int defenseUnitCap() { return defenseUnitCap; }
-        public Castle.Impl defenseUnitCap(int value) {
+        public Impl defenseUnitCap(int value) {
             defenseUnitCap = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"defenseUnitCap", value); }
             return this;
         }
         private int attackUnitCap;
         public int attackUnitCap() { return attackUnitCap; }
-        public Castle.Impl attackUnitCap(int value) {
+        public Impl attackUnitCap(int value) {
             attackUnitCap = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"attackUnitCap", value); }
             return this;
         }
         private boolean divideCap;
         public boolean divideCap() { return divideCap; }
-        public Castle.Impl divideCap(boolean value) {
+        public Impl divideCap(boolean value) {
             divideCap = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"divideCap", value); }
             return this;
         }
         private boolean bettergroundvalid;
         public boolean bettergroundvalid() { return bettergroundvalid; }
-        public Castle.Impl bettergroundvalid(boolean value) {
+        public Impl bettergroundvalid(boolean value) {
             bettergroundvalid = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"bettergroundvalid", value); }
             return this;
         }
         private boolean noplatform;
         public boolean noplatform() { return noplatform; }
-        public Castle.Impl noplatform(boolean value) {
+        public Impl noplatform(boolean value) {
             noplatform = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"noplatform", value); }
             return this;
         }
         private Block shopFloor;
         public Block shopFloor() { return shopFloor; }
-        public Castle.Impl shopFloor(Block value) {
+        public Impl shopFloor(Block value) {
             shopFloor = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"shopFloor", value); }
             return this;
         }
-        private String platformSource;
-        public String platformSource() { return platformSource; }
-        public Castle.Impl platformSource(String value) {
+        private Seq<PlatformEntry> platformSource;
+        public Seq<PlatformEntry> platformSource() { return platformSource; }
+        public Impl platformSource(Seq<PlatformEntry> value) {
             platformSource = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"platformSource", value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.wPlatform(UTILS+"platformSource", value); }
             return this;
         }
     }

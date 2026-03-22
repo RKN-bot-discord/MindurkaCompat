@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.math.geom.Point2;
 import mindurka.util.Schematic;
 import mindustry.game.Rules;
 import mindustry.type.Item;
@@ -53,6 +54,31 @@ public class TagWrite implements AutoCloseable {
     public void w(String key, String v) {
         if (rules == null) return;
         rules.tags.put(key, v);
+    }
+    public void w(String key, Point2 v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.x + " " + v.y);
+    }
+    public void w(String key, arc.struct.Seq<arc.math.geom.Point2> v) {
+        if (rules == null) return;
+        if (v == null || v.size == 0) { rules.tags.remove(key); return; }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < v.size; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(v.get(i).x).append(' ').append(v.get(i).y);
+        }
+        rules.tags.put(key, sb.toString());
+    }
+    public void wPlatform(String key, arc.struct.Seq<mindurka.rules.Castle.PlatformEntry> v) {
+        if (rules == null) return;
+        if (v == null || v.size == 0) { rules.tags.remove(key); return; }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < v.size; i++) {
+            if (i > 0) sb.append(',');
+            mindurka.rules.Castle.PlatformEntry e = v.get(i);
+            sb.append(e.pos.x).append(' ').append(e.pos.y).append(' ').append(e.floor.name);
+        }
+        rules.tags.put(key, sb.toString());
     }
     public void w(String key, Schematic v) {
         if (rules == null) return;

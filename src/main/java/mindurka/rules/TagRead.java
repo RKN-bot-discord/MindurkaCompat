@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.math.geom.Point2;
 import arc.struct.Seq;
 import mindurka.util.FormatException;
 import mindurka.util.Schematic;
@@ -81,6 +82,54 @@ public class TagRead implements AutoCloseable {
         String value = rules.tags.get(key);
         if (value == null) return de;
         return value;
+    }
+    public Point2 r(String key, Point2 de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null) return de;
+        String[] parts = value.split(" ", 2);
+        if (parts.length != 2) return de;
+        try {
+            return new Point2(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        } catch (NumberFormatException ignored) {
+            return de;
+        }
+    }
+    public arc.struct.Seq<Point2> r(String key, arc.struct.Seq<Point2> de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null || value.isEmpty()) return de;
+        arc.struct.Seq<Point2> result = new arc.struct.Seq<>();
+        for (String entry : value.split(",")) {
+            String[] parts = entry.trim().split(" ", 2);
+            if (parts.length != 2) return de;
+            try {
+                result.add(new Point2(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
+            } catch (NumberFormatException ignored) {
+                return de;
+            }
+        }
+        return result.isEmpty() ? de : result;
+    }
+    public arc.struct.Seq<mindurka.rules.Castle.PlatformEntry> rPlatform(String key, arc.struct.Seq<mindurka.rules.Castle.PlatformEntry> de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null || value.isEmpty()) return de;
+        arc.struct.Seq<mindurka.rules.Castle.PlatformEntry> result = new arc.struct.Seq<>();
+        for (String entry : value.split(",")) {
+            String[] parts = entry.trim().split(" ", 3);
+            if (parts.length != 3) return de;
+            try {
+                int x = Integer.parseInt(parts[0]);
+                int y = Integer.parseInt(parts[1]);
+                Block floor = Vars.content.block(parts[2]);
+                if (floor == null) return de;
+                result.add(new mindurka.rules.Castle.PlatformEntry(new Point2(x, y), floor));
+            } catch (NumberFormatException ignored) {
+                return de;
+            }
+        }
+        return result.isEmpty() ? de : result;
     }
     public Schematic r(String key, Schematic de) {
         if (rules == null) return de;

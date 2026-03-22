@@ -5,6 +5,9 @@ import mindurka.util.FormatException;
 import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.game.Rules;
+import mindustry.type.Item;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
 import mindustry.world.Block;
 
 public class TagRead implements AutoCloseable {
@@ -48,6 +51,30 @@ public class TagRead implements AutoCloseable {
         Block block = Vars.content.block(value);
         if (block == null) return de;
         return block;
+    }
+    public UnitType r(String key, UnitType de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null) return de;
+        UnitType unit = Vars.content.unit(value);
+        if (unit == null) return de;
+        return unit;
+    }
+    public Item r(String key, Item de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null) return de;
+        Item item = Vars.content.item(value);
+        if (item == null) return de;
+        return item;
+    }
+    public StatusEffect r(String key, StatusEffect de) {
+        if (rules == null) return de;
+        String value = rules.tags.get(key);
+        if (value == null) return de;
+        StatusEffect status = Vars.content.statusEffect(value);
+        if (status == null) return de;
+        return status;
     }
     public String r(String key, String de) {
         if (rules == null) return de;

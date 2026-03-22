@@ -2,6 +2,9 @@ package mindurka.rules;
 
 import mindurka.util.Schematic;
 import mindustry.game.Rules;
+import mindustry.type.Item;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
 import mindustry.world.Block;
 
 public class TagWrite implements AutoCloseable {
@@ -32,6 +35,18 @@ public class TagWrite implements AutoCloseable {
         rules.tags.put(key, Boolean.toString(v));
     }
     public void w(String key, Block v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
+    public void w(String key, UnitType v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
+    public void w(String key, Item v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
+    public void w(String key, StatusEffect v) {
         if (rules == null) return;
         rules.tags.put(key, v.name);
     }

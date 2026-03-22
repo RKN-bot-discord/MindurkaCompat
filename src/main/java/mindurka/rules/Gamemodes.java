@@ -5,4 +5,5 @@ public class Gamemodes {
 
     public static final Gamemode forts = new Forts();
     public static final Gamemode hub = new Hub();
+    public static final Gamemode castle = new Castle();
 }

@@ -20,7 +20,7 @@ import mindustry.world.meta.Env;
 import static mindustry.Vars.state;
 
 public class Castle extends Gamemode {
-    /** A single platform source entry: a tile position and the floor block to place. */
+
     public static class PlatformEntry {
         public final Point2 pos;
         public final Block floor;
@@ -28,12 +28,13 @@ public class Castle extends Gamemode {
     }
 
     public static final String PREFIX = MRules.PREFIX+".castle";
-    public static final String NAME = "castle";
+    public static final String UTILS = PREFIX+".utils.";
     public static final String TURRET = PREFIX+".turret.";
     public static final String UNIT = PREFIX+".unit.";
     public static final String ITEM = PREFIX+".item.";
     public static final String STATUS = PREFIX+".status.";
-    public static final String DRILL = ".drill";
+    public static final String NAME = "castle";
+    // lighter way to don't have all item and other stuff ctrl c+v
     public static final String COST = ".cost";
     public static final String INCOME = ".income";
     public static final String INTERVAL = ".interval";
@@ -42,9 +43,8 @@ public class Castle extends Gamemode {
     public static final String DURATION = ".duration";
     public static final String ALLY = ".ally";
     public static final String DELAY = ".delay";
-    public static final String UTILS = PREFIX+".utils.";
-    // UTILS_DRILL: fixed key without double-dot (UTILS ends with ".", DRILL starts with ".")
-    public static final String UTILS_DRILL = UTILS + "drill";
+    public static final String DRILL =  ".drill";
+
 
     @Override
     public String name() {
@@ -67,18 +67,18 @@ public class Castle extends Gamemode {
                 item = read.r(ITEM,Items.copper);
                 unit = read.r(UNIT, UnitTypes.flare);
                 status = read.r(STATUS, StatusEffects.none);
-                drill = read.r(UTILS_DRILL, drillGet(item));
-                blockCost = read.r(TURRET+block+COST, -1);
-                unitCost = read.r(UNIT+unit+COST, -1);
-                unitDrop = read.r(UNIT+unit+DROP, -1);
-                unitIncome = read.r(UNIT+unit+INCOME, -1);
-                itemCost = read.r(ITEM+item+COST, -1);
-                itemInetrval = read.r(ITEM+item+INTERVAL, -1);
-                itemAmount = read.r(ITEM+item+AMOUNT, -1);
+                drill = read.r(ITEM+item+DRILL, drillGet(item));
+                blockCost = read.r(TURRET+block+COST, 0);
+                unitCost = read.r(UNIT+unit+COST, 0);
+                unitDrop = read.r(UNIT+unit+DROP, 0);
+                unitIncome = read.r(UNIT+unit+INCOME, 0);
+                itemCost = read.r(ITEM+item+COST, 0);
+                itemInetrval = read.r(ITEM+item+INTERVAL, 0);
+                itemAmount = read.r(ITEM+item+AMOUNT, 0);
                 statusAlly = read.r(STATUS+status+ALLY,false);
-                statusDuration = read.r(STATUS+status+DURATION,-1);
-                statusDelay = read.r(STATUS+status+DELAY,-1);
-                statusCost = read.r(STATUS+status+COST,-1);
+                statusDuration = read.r(STATUS+status+DURATION,0);
+                statusDelay = read.r(STATUS+status+DELAY,0);
+                statusCost = read.r(STATUS+status+COST,0);
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
                 groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());
                 navalSpawn = read.r(UTILS+"navalSpawn", new Seq<>());
@@ -87,7 +87,7 @@ public class Castle extends Gamemode {
                 defenseUnitCap = read.r(UTILS+"defenseUnitCap",75);
                 divideCap = read.r(UTILS+"divideCap",true);
                 bettergroundvalid = read.r(UTILS+"bettergroundvalid",true);
-                noplatform = read.r(UTILS+"noplatform",true);
+                noplatform = read.r(UTILS+"noplatform",false);
                 platformSource = read.rPlatform(UTILS+"platformSource", new Seq<>());
             }
         }
@@ -140,6 +140,7 @@ public class Castle extends Gamemode {
         void remove() {
             final Rules rules = rc.rules;
             Seq<String> toRemove = new Seq<>();
+            // removing ALL tags what seted by castle
             rules.tags.each((key, value) -> {;
                 if (key.startsWith("mdrk.castle.")) toRemove.add(key);
             });
@@ -219,9 +220,10 @@ public class Castle extends Gamemode {
         public Impl unit(UnitType value) {
             unit = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                unitCost = read.r(UNIT+value+COST, -1);
-                unitDrop = read.r(UNIT+value+DROP, -1);
-                unitIncome = read.r(UNIT+value+INCOME, -1);
+                // these variables do not update normally so doing this there should get real value
+                unitCost = read.r(UNIT+value+COST, 0);
+                unitDrop = read.r(UNIT+value+DROP, 0);
+                unitIncome = read.r(UNIT+value+INCOME, 0);
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT, value); }
             return this;
@@ -256,10 +258,11 @@ public class Castle extends Gamemode {
         public Impl item(Item value) {
             item = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                itemCost = read.r(ITEM+item+COST, -1);
-                itemInetrval = read.r(ITEM+item+INTERVAL, -1);
-                itemAmount = read.r(ITEM+item+AMOUNT, -1);
-                drill = read.r(UTILS_DRILL, drillGet(item));
+                // these variables do not update normally so doing this there should get real value
+                itemCost = read.r(ITEM+item+COST, 0);
+                itemInetrval = read.r(ITEM+item+INTERVAL, 0);
+                itemAmount = read.r(ITEM+item+AMOUNT, 0);
+                drill = read.r(ITEM+item+DRILL, drillGet(item));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM, value); }
             return this;
@@ -290,7 +293,7 @@ public class Castle extends Gamemode {
         public Block drill() { return drill; }
         public Impl drill(Block value) {
             drill = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS_DRILL, value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+DRILL, value); }
             return this;
         }
 
@@ -299,8 +302,9 @@ public class Castle extends Gamemode {
         public Impl status(StatusEffect value) {
             status = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                statusDelay = read.r(STATUS+status+DELAY, -1);
-                statusDuration = read.r(STATUS+status+DURATION, -1);
+                // these variables do not update normally so doing this there should get real value
+                statusDelay = read.r(STATUS+status+DELAY, 0);
+                statusDuration = read.r(STATUS+status+DURATION, 0);
                 statusAlly = read.r(STATUS+status+ALLY, false);
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS, value); }

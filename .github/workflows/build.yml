@@ -1,16 +1,15 @@
 name: Build artifact
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+- push
+- pull_request
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
     - uses: actions/checkout@v4
@@ -50,26 +49,26 @@ jobs:
         name: MindurkaCompat
         path: ./build/libs/MindurkaCompat-${{ steps.new-release-tag.outputs.tag }}.jar
 
-    - name: Create release
-      id: create-release
+    # - name: Create release
+    #   id: create-release
 
-      if: ${{ steps.check-release-tag.outputs.exists == 'false' }}
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.new-release-tag.outputs.tag }}
-        release_name: Release ${{ steps.new-release-tag.outputs.tag }}
+    #   if: ${{ steps.check-release-tag.outputs.exists == 'false' }}
+    #   uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: ${{ steps.new-release-tag.outputs.tag }}
+    #     release_name: Release ${{ steps.new-release-tag.outputs.tag }}
 
-    - name: Upload release assets
-      id: upload-release-assets
+    # - name: Upload release assets
+    #   id: upload-release-assets
 
-      if: ${{ steps.check-release-tag.outputs.exists == 'false' }}
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create-release.outputs.upload_url }}
-        asset_path: ./build/libs/MindurkaCompat-${{ steps.new-release-tag.outputs.tag }}.jar
-        asset_name: DarkdustryPlugin-${{ steps.new-release-tag.outputs.tag }}.jar
-        asset_content_type: application/java-archive
+    #   if: ${{ steps.check-release-tag.outputs.exists == 'false' }}
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create-release.outputs.upload_url }}
+    #     asset_path: ./build/libs/MindurkaCompat-${{ steps.new-release-tag.outputs.tag }}.jar
+    #     asset_name: DarkdustryPlugin-${{ steps.new-release-tag.outputs.tag }}.jar
+    #     asset_content_type: application/java-archive

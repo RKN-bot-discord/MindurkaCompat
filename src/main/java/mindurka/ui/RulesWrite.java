@@ -140,6 +140,34 @@ public class RulesWrite {
             });
         }).left().pad(6).fill(false).expand(false, false).row();
     }
+    public <T> void selectionRaw(String key, Cons<AddItem<T>> addItem, Cons<T> onClick, T def) {
+        if (!shouldAdd(key)) return;
+
+        root.table(Tex.button, t -> {
+            t.margin(10f);
+            ButtonGroup<?> group = new ButtonGroup<>();
+            TextButton.TextButtonStyle style = Styles.flatTogglet;
+
+            t.defaults().size(140f, 50f);
+
+            final Seq<TextButton> buttons = new Seq<>();
+
+            addItem.get((name, value) -> {
+                Cell<TextButton>[] button = new Cell[1];
+
+                button[0] = t.button(name, style, () -> {
+                    buttons.each(x -> x.setChecked(false));
+                    button[0].get().setChecked(true);
+                    onClick.get(value);
+                }).group(group);
+
+                button[0].get().setChecked(value == null ? def == null : value.equals(def));
+
+                if (buttons.size % 3 == 2) button[0].row();
+                buttons.add(button[0].get());
+            });
+        }).left().pad(6).row();
+    }
 
     public static class BoolCtl {
         public static final BoolCtl throwaway = new BoolCtl();
@@ -419,123 +447,6 @@ public class RulesWrite {
                     current.remove(i);
                     onClick.get(new Seq<>(current));
                     rebuildPointRows(t, current, ctl, def, onClick);
-                }).size(32f).padLeft(4).left();
-            }).left().row();
-        }
-    }
-
-    public PointsCtl platformSources(String tlKey,
-                                      Prov<Seq<mindurka.rules.Castle.PlatformEntry>> def,
-                                      Cons<Seq<mindurka.rules.Castle.PlatformEntry>> onClick) {
-        if (!shouldAdd(tlKey)) return PointsCtl.throwaway;
-
-        final PointsCtl ctl = new PointsCtl();
-        final Seq<mindurka.rules.Castle.PlatformEntry> current = new Seq<>(def.get());
-        final Table[] rowsTable = {null};
-
-        Cell<Table> outerCell = root.table(outer -> {
-            outer.left();
-            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
-                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
-            outer.table(inner -> {
-                rowsTable[0] = inner;
-                rebuildPlatformRows(inner, current, ctl, def, onClick, tlKey);
-            }).left();
-        }).padTop(0);
-        outerCell.pad(6).get().left().row();
-        root.row();
-
-        return ctl;
-    }
-
-    private void rebuildPlatformRows(Table t,
-                                      Seq<mindurka.rules.Castle.PlatformEntry> current,
-                                      PointsCtl ctl,
-                                      Prov<Seq<mindurka.rules.Castle.PlatformEntry>> def,
-                                      Cons<Seq<mindurka.rules.Castle.PlatformEntry>> onClick,
-                                      String tlKey) {
-        t.clear();
-        t.defaults().left();
-
-        // + always visible, even when list is empty
-        t.button("+", () -> {
-            current.add(new mindurka.rules.Castle.PlatformEntry(
-                    new Point2(-1, -1), mindustry.content.Blocks.empty));
-            onClick.get(new Seq<>(current));
-            rebuildPlatformRows(t, current, ctl, def, onClick, tlKey);
-        }).size(32f).padBottom(2).left().row();
-
-        for (int idx = 0; idx < current.size; idx++) {
-            final int i = idx;
-            final int[] prev = {current.get(i).pos.x, current.get(i).pos.y};
-
-            t.table(row -> {
-                row.add().size(32f).padRight(4); // spacer to align with + above
-
-                row.field(prev[0] + "", s -> {
-                            int v = Strings.parseInt(s);
-                            prev[0] = v;
-                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
-                                    new Point2(v, current.get(i).pos.y), current.get(i).floor));
-                            onClick.get(new Seq<>(current));
-                        })
-                        .update(a -> {
-                            a.setDisabled(!ctl.enabled.get());
-                            Seq<mindurka.rules.Castle.PlatformEntry> d = def.get();
-                            if (i < d.size && d.get(i).pos.x != prev[0]) {
-                                prev[0] = d.get(i).pos.x;
-                                a.setText(prev[0] + "");
-                            }
-                        })
-                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
-                row.add("  ").padLeft(2).padRight(2);
-                row.field(prev[1] + "", s -> {
-                            int v = Strings.parseInt(s);
-                            prev[1] = v;
-                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
-                                    new Point2(current.get(i).pos.x, v), current.get(i).floor));
-                            onClick.get(new Seq<>(current));
-                        })
-                        .update(a -> {
-                            a.setDisabled(!ctl.enabled.get());
-                            Seq<mindurka.rules.Castle.PlatformEntry> d = def.get();
-                            if (i < d.size && d.get(i).pos.y != prev[1]) {
-                                prev[1] = d.get(i).pos.y;
-                                a.setText(prev[1] + "");
-                            }
-                        })
-                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
-
-                row.button(b -> {
-                    b.left();
-                    b.table(Tex.pane, in -> in.stack(
-                            new Image(Tex.alphaBg),
-                            new Image(new TextureRegionDrawable(
-                                    current.get(i).floor.uiIcon,
-                                    4f / Math.min(current.get(i).floor.uiIcon.width,
-                                            current.get(i).floor.uiIcon.height))) {{
-                                update(() -> {
-                                    if (i < current.size)
-                                        setDrawable(new TextureRegionDrawable(
-                                                current.get(i).floor.uiIcon,
-                                                4f / Math.min(current.get(i).floor.uiIcon.width,
-                                                        current.get(i).floor.uiIcon.height)));
-                                });
-                            }}).grow()).margin(4).size(40).get();
-                }, () -> new BlockSelectDialog("@" + tlKey).show(
-                        block -> block.isFloor(),
-                        block -> {
-                            current.set(i, new mindurka.rules.Castle.PlatformEntry(
-                                    current.get(i).pos, block));
-                            onClick.get(new Seq<>(current));
-                        },
-                        current.get(i).floor
-                )).size(50f).padLeft(4).left();
-
-                row.button("-", () -> {
-                    current.remove(i);
-                    onClick.get(new Seq<>(current));
-                    rebuildPlatformRows(t, current, ctl, def, onClick, tlKey);
                 }).size(32f).padLeft(4).left();
             }).left().row();
         }

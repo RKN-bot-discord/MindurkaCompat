@@ -1,8 +1,10 @@
 package mindurka.rules;
 
+import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.math.geom.Point2;
 import mindurka.ui.RulesWrite;
+import mindurka.util.Schematic;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
 import mindustry.content.StatusEffects;
@@ -17,15 +19,11 @@ import mindustry.world.Block;
 import mindustry.world.blocks.defense.turrets.Turret;
 import mindustry.world.meta.Env;
 
+import mindurka.rules.CastleCosts;
+
 import static mindustry.Vars.state;
 
 public class Castle extends Gamemode {
-
-    public static class PlatformEntry {
-        public final Point2 pos;
-        public final Block floor;
-        public PlatformEntry(Point2 pos, Block floor) { this.pos = pos; this.floor = floor; }
-    }
 
     public static final String PREFIX = MRules.PREFIX+".castle";
     public static final String UTILS = PREFIX+".utils.";
@@ -59,81 +57,130 @@ public class Castle extends Gamemode {
     public class Impl extends Gamemode.Impl {
         private Impl(RulesContext rc) {
             super(rc);
-            
+
             final Rules rules = rc.rules;
-            
+
             try (TagRead read = TagRead.of(rc.rules)) {
+                CastleCosts.load();
                 block = read.r(TURRET, Blocks.duo);
-                item = read.r(ITEM,Items.copper);
+                item = read.r(ITEM, Items.copper);
                 unit = read.r(UNIT, UnitTypes.flare);
                 status = read.r(STATUS, StatusEffects.none);
-                drill = read.r(ITEM+item+DRILL, drillGet(item));
-                blockCost = read.r(TURRET+block+COST, 0);
-                unitCost = read.r(UNIT+unit+COST, 0);
-                unitDrop = read.r(UNIT+unit+DROP, 0);
-                unitIncome = read.r(UNIT+unit+INCOME, 0);
-                itemCost = read.r(ITEM+item+COST, 0);
-                itemInetrval = read.r(ITEM+item+INTERVAL, 0);
-                itemAmount = read.r(ITEM+item+AMOUNT, 0);
-                statusAlly = read.r(STATUS+status+ALLY,false);
-                statusDuration = read.r(STATUS+status+DURATION,0);
-                statusDelay = read.r(STATUS+status+DELAY,0);
-                statusCost = read.r(STATUS+status+COST,0);
+                blockCost = read.r(TURRET+block+COST, CastleCosts.turrets.get((Turret) block,0));
+                CastleCosts.UnitData unitData = CastleCosts.units.get(unit);
+                unitCost = read.r(UNIT + unit + COST,
+                        unitData != null ? unitData.cost() : 0
+                );
+
+                unitDrop = read.r(UNIT + unit + DROP,
+                        unitData != null ? unitData.drop() : 0
+                );
+
+                unitIncome = read.r(UNIT + unit + INCOME,
+                        unitData != null ? unitData.income() : 0
+                );
+                CastleCosts.ItemData itemData = CastleCosts.items.get(item);
+                itemCostMap.put(item,     read.r(ITEM+item+COST,
+                        itemData != null ? itemData.cost() : 0
+                ));
+                itemIntervalMap.put(item, read.r(ITEM+item+INTERVAL,
+                        itemData != null ? itemData.interval() : 0
+                ));
+                itemAmountMap.put(item,   read.r(ITEM+item+AMOUNT,
+                        itemData != null ? itemData.amount() : 0
+                ));
+                drillMap.put(item,        read.r(ITEM+item+DRILL,    drillGet(item)));
+                CastleCosts.EffectData effectData = CastleCosts.effects.get(status);
+                statusDelayMap.put(status, read.r(STATUS+status+DELAY,
+                        effectData != null ? effectData.delay() : 0
+                ));
+                statusDurationMap.put(status, read.r(STATUS+status+DURATION,
+                        effectData != null ? effectData.duration() : 0
+                ));
+                statusCostMap.put(status,     read.r(STATUS+status+COST,
+                        effectData != null ? effectData.cost() : 0
+                ));
+                statusAllyMap.put(status,     read.r(STATUS+status+ALLY,
+                        effectData != null && effectData.ally()
+                ));
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
                 groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());
                 navalSpawn = read.r(UTILS+"navalSpawn", new Seq<>());
                 airSpawn = read.r(UTILS+"airSpawn", new Seq<>());
-                attackUnitCap = read.r(UTILS+"attackUnitCap",-1);
-                defenseUnitCap = read.r(UTILS+"defenseUnitCap",75);
-                divideCap = read.r(UTILS+"divideCap",true);
-                bettergroundvalid = read.r(UTILS+"bettergroundvalid",true);
-                noplatform = read.r(UTILS+"noplatform",false);
-                platformSource = read.rPlatform(UTILS+"platformSource", new Seq<>());
+                attackUnitCap = read.r(UTILS+"attackUnitCap", -1);
+                defenseUnitCap = read.r(UTILS+"defenseUnitCap", 75);
+                divideCap = read.r(UTILS+"divideCap", true);
+                betterGroundValid = read.r(UTILS+"betterGroundValid", true);
+                noPlatform = read.r(UTILS+"noPlatform", false);
             }
         }
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
-            write.block("rules.mindurka.castle.turret", this::block,  this::block).filter(block -> block instanceof Turret && !block.isFloor());
-            write.i("rules.mindurka.castle.turret.cost",this::blockCost,this::blockCost);
+            write.selectionRaw("rules.mindurka.castle.turret", addEntry -> {
+                for (Block b : mindustry.Vars.content.blocks()) {
+                    if (b instanceof Turret t) {
+                        addEntry.add(t.localizedName + t.emoji(), t);
+                    }
+                }
+            }, this::block, block);
+            {
+                RulesWrite blockTable = write.table();
+                blockTable.i("rules.mindurka.castle.turret.cost", this::blockCost, this::blockCost);
+            }
+            write.spacer();
+            write.selectionRaw("rules.mindurka.castle.unit", addEntry -> {
+                for (UnitType u : mindustry.Vars.content.units()) addEntry.add(u.localizedName+u.emoji(), u);
+            }, this::unit, unit);
+            {
+                RulesWrite unitTable = write.table();
+                unitTable.i("rules.mindurka.castle.unit.cost", this::unitCost, this::unitCost);
+                unitTable.i("rules.mindurka.castle.unit.income", this::unitIncome, this::unitIncome);
+                unitTable.i("rules.mindurka.castle.unit.drop", this::unitDrop, this::unitDrop);
+            }
             write.spacer();
 
-            write.unit("rules.mindurka.castle.unit", this::unit,   this::unit).filter(unit -> !unit.isBanned());
-            write.i("rules.mindurka.castle.unit.cost",this::unitCost,this::unitCost);
-            write.i("rules.mindurka.castle.unit.income",this::unitIncome,this::unitIncome);
-            write.i("rules.mindurka.castle.unit.drop",this::unitDrop,this::unitDrop);
+            write.selectionRaw("rules.mindurka.castle.item", addEntry -> {
+                for (Item i : mindustry.Vars.content.items()) addEntry.add(i.localizedName+i.emoji(), i);
+            }, this::item, item);
+            {
+                RulesWrite itemTable = write.table();
+                itemTable.i("rules.mindurka.castle.item.interval", this::itemInterval, this::itemInterval);
+                itemTable.i("rules.mindurka.castle.item.amount",   this::itemAmount,   this::itemAmount);
+                itemTable.i("rules.mindurka.castle.item.cost",     this::itemCost,     this::itemCost);
+                itemTable.block("rules.mindurka.castle.drill",     this::drill,        this::drill).filter(d -> true);
+            }
             write.spacer();
 
-            write.item("rules.mindurka.castle.item", this::item,   this::item).filter(item -> true);
-            write.i("rules.mindurka.castle.item.interval",this::itemInetrval,this::itemInetrval);
-            write.i("rules.mindurka.castle.item.amount",this::itemAmount,this::itemAmount);
-            write.i("rules.mindurka.castle.item.cost",this::itemCost,this::itemCost);
-            write.block("rules.mindurka.castle.drill", this::drill,  this::drill).filter(drill -> true);
+            write.selectionRaw("rules.mindurka.castle.status", addEntry -> {
+                for (StatusEffect s : mindustry.Vars.content.statusEffects()) addEntry.add(s.localizedName+s.emoji(), s);
+            }, this::status, status);
+            {
+                RulesWrite statusTable = write.table();
+                statusTable.i("rules.mindurka.castle.status.cost",     this::statusCost,     this::statusCost);
+                statusTable.i("rules.mindurka.castle.status.delay",    this::statusDelay,    this::statusDelay);
+                statusTable.i("rules.mindurka.castle.status.duration", this::statusDuration, this::statusDuration);
+                statusTable.b("rules.mindurka.castle.status.ally",     this::statusAlly,     this::statusAlly);
+            }
             write.spacer();
 
-            write.status("rules.mindurka.castle.status", this::status, this::status).filter(item -> true);
-            write.i("rules.mindurka.castle.status.cost",this::statusCost,this::statusCost);
-            write.i("rules.mindurka.castle.status.delay",this::statusDelay,this::statusDelay);
-            write.i("rules.mindurka.castle.status.duration",this::statusDuration,this::statusDuration);
-            write.b("rules.mindurka.castle.status.ally",this::statusAlly,this::statusAlly);
-            write.spacer();
-            // TODO: make this is tool instead of this
-            write.points("rules.mindurka.castle.groundSpawn",this::groundSpawn, this::groundSpawn);
-            write.points("rules.mindurka.castle.airSpawn",this::airSpawn, this::airSpawn);
-            write.points("rules.mindurka.castle.navalSpawn",this::navalSpawn, this::navalSpawn);
+            // TODO: make this a tool instead of this
+            write.points("rules.mindurka.castle.groundSpawn", this::groundSpawn, this::groundSpawn);
+            write.points("rules.mindurka.castle.airSpawn",    this::airSpawn,    this::airSpawn);
+            write.points("rules.mindurka.castle.navalSpawn",  this::navalSpawn,  this::navalSpawn);
             write.spacer();
 
-            write.i("rules.mindurka.castle.defenseUnitCap",this::defenseUnitCap,this::defenseUnitCap);
-            write.i("rules.mindurka.castle.attackUnitCap",this::attackUnitCap,this::attackUnitCap);
-            write.b("rules.mindurka.castle.divideCap",this::divideCap,this::divideCap);
+            write.i("rules.mindurka.castle.defenseUnitCap", this::defenseUnitCap, this::defenseUnitCap);
+            write.i("rules.mindurka.castle.attackUnitCap",  this::attackUnitCap,  this::attackUnitCap);
+            write.b("rules.mindurka.castle.divideCap",      this::divideCap,      this::divideCap);
             write.spacer();
 
-            write.platformSources("rules.mindurka.castle.platformSource", this::platformSource, this::platformSource);
+            //  TODO: Platform source schematic realization
             write.spacer();
 
-            write.b("rules.mindurka.castle.noplatform", this::noplatform, this::noplatform);
-            write.b("rules.mindurka.castle.bettergroundvalid", this::bettergroundvalid, this::bettergroundvalid);
-            write.block("rules.mindurka.castle.shopFloor", this::shopFloor, this::shopFloor);
+            write.b("rules.mindurka.castle.noPlatform",       this::noPlatform,       this::noPlatform);
+            write.b("rules.mindurka.castle.betterGroundValid", this::betterGroundValid, this::betterGroundValid);
+            write.block("rules.mindurka.castle.shopFloor",    this::shopFloor,        this::shopFloor);
         }
 
         @Override
@@ -201,7 +248,7 @@ public class Castle extends Gamemode {
         public Impl block(Block value) {
             block = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                blockCost = read.r(TURRET+block+COST, -1);
+                blockCost = read.r(TURRET+block+COST, CastleCosts.turrets.get((Turret) block,0));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(TURRET, value); }
             return this;
@@ -221,9 +268,18 @@ public class Castle extends Gamemode {
             unit = value;
             try (TagRead read = TagRead.of(rc.rules)) {
                 // these variables do not update normally so doing this there should get real value
-                unitCost = read.r(UNIT+value+COST, 0);
-                unitDrop = read.r(UNIT+value+DROP, 0);
-                unitIncome = read.r(UNIT+value+INCOME, 0);
+                CastleCosts.UnitData unitData = CastleCosts.units.get(unit);
+                unitCost = read.r(UNIT + unit + COST,
+                        unitData != null ? unitData.cost() : 0
+                );
+
+                unitDrop = read.r(UNIT + unit + DROP,
+                        unitData != null ? unitData.drop() : 0
+                );
+
+                unitIncome = read.r(UNIT + unit + INCOME,
+                        unitData != null ? unitData.income() : 0
+                );
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UNIT, value); }
             return this;
@@ -257,42 +313,53 @@ public class Castle extends Gamemode {
         public Item item() { return item; }
         public Impl item(Item value) {
             item = value;
+            // Load previously-saved values for this item (or defaults).
             try (TagRead read = TagRead.of(rc.rules)) {
-                // these variables do not update normally so doing this there should get real value
-                itemCost = read.r(ITEM+item+COST, 0);
-                itemInetrval = read.r(ITEM+item+INTERVAL, 0);
-                itemAmount = read.r(ITEM+item+AMOUNT, 0);
-                drill = read.r(ITEM+item+DRILL, drillGet(item));
+                CastleCosts.ItemData itemData = CastleCosts.items.get(item);
+                itemCostMap.put(item,     read.r(ITEM+item+COST,
+                        itemData != null ? itemData.cost() : 0
+                ));
+                itemIntervalMap.put(item, read.r(ITEM+item+INTERVAL,
+                        itemData != null ? itemData.interval() : 0
+                ));
+                itemAmountMap.put(item,   read.r(ITEM+item+AMOUNT,
+                        itemData != null ? itemData.amount() : 0
+                ));
+                drillMap.put(item,        read.r(ITEM+item+DRILL,    drillGet(item)));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM, value); }
             return this;
         }
 
-        private int itemCost;
-        public int itemCost() { return itemCost; }
+        private final ObjectMap<Item, Integer> itemCostMap     = new ObjectMap<>();
+        private final ObjectMap<Item, Integer> itemIntervalMap = new ObjectMap<>();
+        private final ObjectMap<Item, Integer> itemAmountMap   = new ObjectMap<>();
+        private final ObjectMap<Item, Block>   drillMap        = new ObjectMap<>();
+
+        public int itemCost() { return itemCostMap.get(item, 0); }
         public Impl itemCost(int value) {
-            itemCost = value;
+            itemCostMap.put(item, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+COST, value); }
             return this;
         }
-        private int itemInetrval;
-        public int itemInetrval() { return itemInetrval; }
-        public Impl itemInetrval(int value) {
-            itemInetrval = value;
+
+        public int itemInterval() { return itemIntervalMap.get(item, 0); }
+        public Impl itemInterval(int value) {
+            itemIntervalMap.put(item, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+INTERVAL, value); }
             return this;
         }
-        private int itemAmount;
-        public int itemAmount() { return itemAmount; }
+
+        public int itemAmount() { return itemAmountMap.get(item, 0); }
         public Impl itemAmount(int value) {
-            itemAmount = value;
+            itemAmountMap.put(item, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+AMOUNT, value); }
             return this;
         }
-        private Block drill;
-        public Block drill() { return drill; }
+
+        public Block drill() { return drillMap.get(item, Blocks.laserDrill); }
         public Impl drill(Block value) {
-            drill = value;
+            drillMap.put(item, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(ITEM+item+DRILL, value); }
             return this;
         }
@@ -302,42 +369,57 @@ public class Castle extends Gamemode {
         public Impl status(StatusEffect value) {
             status = value;
             try (TagRead read = TagRead.of(rc.rules)) {
-                // these variables do not update normally so doing this there should get real value
-                statusDelay = read.r(STATUS+status+DELAY, 0);
-                statusDuration = read.r(STATUS+status+DURATION, 0);
-                statusAlly = read.r(STATUS+status+ALLY, false);
+                CastleCosts.EffectData effectData = CastleCosts.effects.get(status);
+                statusDelayMap.put(status, read.r(STATUS+status+DELAY,
+                        effectData != null ? effectData.delay() : 0
+                ));
+                statusDurationMap.put(status, read.r(STATUS+status+DURATION,
+                        effectData != null ? effectData.duration() : 0
+                ));
+                statusCostMap.put(status,     read.r(STATUS+status+COST,
+                        effectData != null ? effectData.cost() : 0
+                ));
+                statusAllyMap.put(status,     read.r(STATUS+status+ALLY,
+                        effectData != null && effectData.ally()
+                ));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS, value); }
             return this;
         }
-        private int statusDelay;
-        public int statusDelay() { return statusDelay; }
+
+        private final ObjectMap<StatusEffect, Integer> statusDelayMap    = new ObjectMap<>();
+        private final ObjectMap<StatusEffect, Integer> statusDurationMap = new ObjectMap<>();
+        private final ObjectMap<StatusEffect, Integer> statusCostMap     = new ObjectMap<>();
+        private final ObjectMap<StatusEffect, Boolean> statusAllyMap     = new ObjectMap<>();
+
+        public int statusDelay() { return statusDelayMap.get(status, 0); }
         public Impl statusDelay(int value) {
-            statusDelay = value;
+            statusDelayMap.put(status, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+DELAY, value); }
             return this;
         }
-        private int statusCost;
-        public int statusCost() { return statusCost; }
+
+        public int statusCost() { return statusCostMap.get(status, 0); }
         public Impl statusCost(int value) {
-            statusCost = value;
+            statusCostMap.put(status, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+COST, value); }
             return this;
         }
-        private int statusDuration;
-        public int statusDuration() { return statusDuration; }
+
+        public int statusDuration() { return statusDurationMap.get(status, 0); }
         public Impl statusDuration(int value) {
-            statusDuration = value;
+            statusDurationMap.put(status, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+DURATION, value); }
             return this;
         }
-        private boolean statusAlly;
-        public boolean statusAlly() { return statusAlly; }
+
+        public boolean statusAlly() { return statusAllyMap.get(status, false); }
         public Impl statusAlly(boolean value) {
-            statusAlly = value;
+            statusAllyMap.put(status, value);
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS+status+ALLY, value); }
             return this;
         }
+
         private Seq<Point2> groundSpawn;
         public Seq<Point2> groundSpawn() { return groundSpawn; }
         public Impl groundSpawn(Seq<Point2> value) {
@@ -345,6 +427,7 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"groundSpawn", value); }
             return this;
         }
+
         private Seq<Point2> airSpawn;
         public Seq<Point2> airSpawn() { return airSpawn; }
         public Impl airSpawn(Seq<Point2> value) {
@@ -352,6 +435,7 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"airSpawn", value); }
             return this;
         }
+
         private Seq<Point2> navalSpawn;
         public Seq<Point2> navalSpawn() { return navalSpawn; }
         public Impl navalSpawn(Seq<Point2> value) {
@@ -359,6 +443,9 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"navalSpawn", value); }
             return this;
         }
+
+        // ── Unit caps ─────────────────────────────────────────────────────────────
+
         private int defenseUnitCap;
         public int defenseUnitCap() { return defenseUnitCap; }
         public Impl defenseUnitCap(int value) {
@@ -366,6 +453,7 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"defenseUnitCap", value); }
             return this;
         }
+
         private int attackUnitCap;
         public int attackUnitCap() { return attackUnitCap; }
         public Impl attackUnitCap(int value) {
@@ -373,6 +461,7 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"attackUnitCap", value); }
             return this;
         }
+
         private boolean divideCap;
         public boolean divideCap() { return divideCap; }
         public Impl divideCap(boolean value) {
@@ -380,32 +469,28 @@ public class Castle extends Gamemode {
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"divideCap", value); }
             return this;
         }
-        private boolean bettergroundvalid;
-        public boolean bettergroundvalid() { return bettergroundvalid; }
-        public Impl bettergroundvalid(boolean value) {
-            bettergroundvalid = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"bettergroundvalid", value); }
+
+        private boolean betterGroundValid;
+        public boolean betterGroundValid() { return betterGroundValid; }
+        public Impl betterGroundValid(boolean value) {
+            betterGroundValid = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"betterGroundValid", value); }
             return this;
         }
-        private boolean noplatform;
-        public boolean noplatform() { return noplatform; }
-        public Impl noplatform(boolean value) {
-            noplatform = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"noplatform", value); }
+
+        private boolean noPlatform;
+        public boolean noPlatform() { return noPlatform; }
+        public Impl noPlatform(boolean value) {
+            noPlatform = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"noPlatform", value); }
             return this;
         }
+
         private Block shopFloor;
         public Block shopFloor() { return shopFloor; }
         public Impl shopFloor(Block value) {
             shopFloor = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"shopFloor", value); }
-            return this;
-        }
-        private Seq<PlatformEntry> platformSource;
-        public Seq<PlatformEntry> platformSource() { return platformSource; }
-        public Impl platformSource(Seq<PlatformEntry> value) {
-            platformSource = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.wPlatform(UTILS+"platformSource", value); }
             return this;
         }
     }

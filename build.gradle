@@ -11,7 +11,6 @@ group = "net.buj"
 version = "${mod['version']}"
 
 compileJava.options.encoding = "UTF-8"
-
 repositories {
     mavenCentral()
     maven { url "https://raw.githubusercontent.com/Zelaux/MindustryRepo/master/repository" }
@@ -20,8 +19,8 @@ repositories {
 
 allprojects {
     tasks.withType(JavaCompile).configureEach {
-        targetCompatibility = 8
-        sourceCompatibility = 8
+        targetCompatibility = 16
+        sourceCompatibility = 16
 
         options.forkOptions.jvmArgs += [
                 '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',

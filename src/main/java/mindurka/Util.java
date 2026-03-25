@@ -1,6 +1,7 @@
 package mindurka;
 
 import arc.struct.ByteSeq;
+import arc.util.Strings;
 
 import java.nio.ByteBuffer;
 
@@ -98,5 +99,44 @@ public class Util {
         intBuffer.position(0);
         intBuffer.put(a.items, pos, 4);
         return intBuffer.getInt(0);
+    }
+
+    public static boolean keyHasHeadByte(String key, String head) {
+        int end = head.length();
+        if (!key.startsWith(head)) return false;
+        char c;
+        switch (key.length() - end) {
+            case 1:
+                c = key.charAt(end);
+                return c >= '0' && c <= '9';
+            case 2:
+                c = key.charAt(end);
+                if (c < '1' || c > '9') return false;
+                c = key.charAt(end + 1);
+                return c >= '0' && c <= '9';
+            case 3:
+                c = key.charAt(end);
+                if (c < '1' || c > '2') return false;
+                if (c == '2') {
+                    c = key.charAt(end + 1);
+                    if (c < '0' || c > '5') return false;
+                    if (c == '5') {
+                        c = key.charAt(end + 2);
+                        return c >= '0' && c <= '5';
+                    } else {
+                        c = key.charAt(end + 2);
+                        return c >= '0' && c <= '9';
+                    }
+                } else {
+                    c = key.charAt(end + 1);
+                    if (c < '0' || c > '9') return false;
+                    c = key.charAt(end + 2);
+                    return c >= '0' && c <= '9';
+                }
+            default: return false;
+        }
+    }
+    public static int keyHeadByte(String key, String head) {
+        return Strings.parseInt(key, 10, 0, head.length(), key.length());
     }
 }

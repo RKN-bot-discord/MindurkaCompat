@@ -1,7 +1,11 @@
 package mindurka.rules;
 
+import arc.struct.Bits;
+import arc.struct.ObjectIntMap;
+import arc.struct.Seq;
 import arc.util.io.Streams;
 import mindurka.MVars;
+import mindurka.Util;
 import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -9,6 +13,7 @@ import mindustry.content.Items;
 import mindustry.content.Planets;
 import mindustry.game.Rules;
 import mindustry.game.Team;
+import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
 
@@ -21,6 +26,9 @@ public class Forts extends Gamemode {
     public static final String ENABLE_1VA = PREFIX+".enable_1va";
     public static final String ENABLE_VNW = PREFIX+".enable_wnv";
     public static final String EXPANSION_BLOCK = PREFIX+".expansion_block";
+    public static final String MIN_HEALTH = PREFIX+".min_health";
+    public static final String APPLY_DAMAGE_EFFECTS_HEAD = PREFIX+".apply_damage_effects.";
+    public static final String PASSIVE_ITEMS_HEAD = PREFIX+".passive_items.";
 
     public static final String THOR_PREFIX = PREFIX+".thor";
     public static final String THOR_ENABLED = THOR_PREFIX+".enabled";
@@ -86,6 +94,7 @@ public class Forts extends Gamemode {
                 enable1va = read.r(ENABLE_1VA, true);
                 enableVnw = read.r(ENABLE_VNW, false);
                 expansionBlock = read.r(EXPANSION_BLOCK, Blocks.impulsePump);
+                minHealth = read.r(MIN_HEALTH, 450f);
 
                 thorEnabled = read.r(THOR_ENABLED, true);
                 thorDelay = read.r(THOR_DELAY, 0.5f);
@@ -112,16 +121,44 @@ public class Forts extends Gamemode {
                 neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 1125f);
                 neoplasiaBlock = read.r(NEOPLASIA_BLOCK, Blocks.neoplasiaReactor);
                 if (!neoplasiaBlock.rotate) impactBlock = Blocks.neoplasiaReactor;
+
+                for (Item item : Vars.content.items()) {
+                    passiveItems.add(new ItemStack(item, read.r(PASSIVE_ITEMS_HEAD+item.name,
+                            item == Items.copper || item == Items.lead
+                                    || item == Items.silicon || item == Items.graphite ? 50 : 0)));
+                }
             }
+
+            applyDamageEffects.set(0, 256);
+
+            rc.rules.tags.each((key, value) -> {
+                if (Util.keyHasHeadByte(key, APPLY_DAMAGE_EFFECTS_HEAD)) {
+                    applyDamageEffects.set(Util.keyHeadByte(key, APPLY_DAMAGE_EFFECTS_HEAD), value.equals("true"));
+                }
+            });
         }
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
-            // TODO: Select block.
-
             write.b("rules.mindurka.enable_1va", this::enable1va, this::enable1va);
             write.b("rules.mindurka.enable_vnw", this::enableVnw, this::enableVnw);
             write.block("rules.mindurka.expansion_block", this::expansionBlock, this::expansionBlock);
+            write.f("rules.mindurka.forts.min_health", this::minHealth, this::minHealth);
+            write.loadout("rules.mindurka.passive_items", 999999, () -> {
+                Seq<ItemStack> stacks = new Seq<>();
+                for (Item item : Vars.content.items()) stacks.add(new ItemStack(item, passiveItems(item)));
+                return stacks;
+            }, i -> true, () -> {
+                Seq<String> removeAll = new Seq<>(String.class);
+                rc.rules.tags.each((key, value) -> {
+                    if (Util.keyHasHeadByte(key, PASSIVE_ITEMS_HEAD)) removeAll.add(key);
+                });
+                removeAll.each(rc.rules.tags::remove);
+                passiveItems.each(stack -> stack.amount = stack.item == Items.copper || stack.item == Items.lead
+                        || stack.item == Items.silicon || stack.item == Items.graphite ? 50 : 0);
+            }, () -> {
+                passiveItems.each(stack -> rc.rules.tags.put(PASSIVE_ITEMS_HEAD+stack.item.name, Integer.toString(stack.amount)));
+            }, () -> {});
             write.spacer();
 
             write.b("rules.mindurka.thor.enabled", this::thorEnabled, this::thorEnabled);
@@ -168,10 +205,15 @@ public class Forts extends Gamemode {
                     pwrite.clear();
                     plotKind().writeRules(pwrite);
 
-                    pwrite.teams("rules.teams", plotKind()::writeTeamRules, team -> false);
+                    pwrite.teams("rules.teams", this::writeTeamRules, team -> !applyDamageEffects(team));
                 };
                 refreshPlotKindRules[0].run();
             }
+        }
+
+        private void writeTeamRules(Team team, RulesWrite write) {
+            write.b("rules.mindurka.forts.apply_damage_effects", () -> applyDamageEffects(team), v -> applyDamageEffects(team, v));
+            plotKind().writeTeamRules(team, write);
         }
 
         @Override
@@ -219,6 +261,14 @@ public class Forts extends Gamemode {
         public Impl expansionBlock(Block value) {
             expansionBlock = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(EXPANSION_BLOCK, value); }
+            return this;
+        }
+
+        private float minHealth;
+        public float minHealth() { return minHealth; }
+        public Impl minHealth(float value) {
+            minHealth = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(MIN_HEALTH, value); }
             return this;
         }
 
@@ -390,6 +440,26 @@ public class Forts extends Gamemode {
             return this;
         }
 
+        private final Bits applyDamageEffects = new Bits(256);
+        public boolean applyDamageEffects(Team team) {
+            return applyDamageEffects.get(team.id);
+        }
+        public Impl applyDamageEffects(Team team, boolean value) {
+            applyDamageEffects.set(team.id, value);
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(APPLY_DAMAGE_EFFECTS_HEAD+team.id, value); }
+            return this;
+        }
+
+        private final Seq<ItemStack> passiveItems = new Seq<>(ItemStack.class);
+        public int passiveItems(Item item) {
+            return passiveItems.find(x -> x.item == item).amount;
+        }
+        public Impl passiveItems(Item item, int value) {
+            passiveItems.find(x -> x.item == item).amount = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(PASSIVE_ITEMS_HEAD+item.name, value); }
+            return this;
+        }
+
         @Override
         void remove() {
             final Rules rules = rc.rules;
@@ -421,6 +491,14 @@ public class Forts extends Gamemode {
             rules.tags.remove(ENABLE_1VA);
             rules.tags.remove(ENABLE_VNW);
             rules.tags.remove(EXPANSION_BLOCK);
+            rules.tags.remove(MIN_HEALTH);
+
+            Seq<String> removeAll = new Seq<>(String.class);
+            rules.tags.each((key, value) -> {
+                if (Util.keyHasHeadByte(key, APPLY_DAMAGE_EFFECTS_HEAD)) removeAll.add(key);
+                else if (Util.keyHasHeadByte(key, PASSIVE_ITEMS_HEAD)) removeAll.add(key);
+            });
+            removeAll.each(rules.tags::remove);
 
             plotKind.remove();
         }

@@ -119,7 +119,6 @@ public class Schematic {
 
     public static Schematic of(Tiles tiles, int x, int y, int w, int h) { return of(tiles, x, y, w, h, DEFAULT); }
     public static Schematic of(Tiles tiles, int x, int y, int w, int h, Options options) {
-        // Log.info("x="+x+", y="+y+", w="+w+", h="+h);
         if (x >= tiles.width || y >= tiles.height) {
             Log.warn("Not enough space for scheme! Returning an empty one.");
             return EMPTY;
@@ -283,13 +282,13 @@ public class Schematic {
             boolean dataChanged = tile.data != this.data[idx];
 
             tile.setPackedData(this.data[idx]);
-            if (options.updateNet && dataChanged) {
-                ByteBuffer buf = ByteBuffer.wrap(new byte[16]);
-                buf.putInt(0, x + dx);
-                buf.putInt(4, y + dy);
-                buf.putLong(8, this.data[idx]);
+            if (options.updateNet && dataChanged && tile.block().saveData && Vars.net.server()) {
+                ByteBuffer buf = ByteBuffer.wrap(new byte[12]);
+                buf.putShort(0, tile.x);
+                buf.putShort(2, tile.y);
+                buf.putLong(4, this.data[idx]);
 
-                Call.serverBinaryPacketReliable("mindurka.setData", buf.array());
+                Call.clientBinaryPacketReliable("mindurka.setData", buf.array().clone());
             }
         }
     }

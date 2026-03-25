@@ -4,6 +4,7 @@ import arc.struct.IntMap;
 import arc.util.Log;
 import arc.util.Strings;
 import mindurka.MVars;
+import mindurka.Util;
 import mindurka.ui.RulesWrite;
 import mindurka.util.FormatException;
 import mindurka.util.Schematic;
@@ -20,62 +21,14 @@ public class FortsPlotKindSquare extends FortsPlotKind {
     public static final String SHIFT_Y = PREFIX+".shift_y";
     public static final String DATA = PREFIX+".states";
     public static final String SCHEMATIC_HEAD = PREFIX+".schematic.";
-    public static final int SCHEMATIC_HEAD_END = SCHEMATIC_HEAD.length();
     public static boolean keyIsSchematic(String key) {
-        if (!key.startsWith(SCHEMATIC_HEAD)) return false;
-        char c;
-        switch (key.length() - SCHEMATIC_HEAD_END) {
-            case 1:
-                c = key.charAt(SCHEMATIC_HEAD_END);
-                return c >= '0' && c <= '9';
-            case 2:
-                c = key.charAt(SCHEMATIC_HEAD_END);
-                if (c < '1' || c > '9') return false;
-                c = key.charAt(SCHEMATIC_HEAD_END + 1);
-                return c >= '0' && c <= '9';
-            case 3:
-                c = key.charAt(SCHEMATIC_HEAD_END);
-                if (c < '1' || c > '2') return false;
-                if (c == '2') {
-                    c = key.charAt(SCHEMATIC_HEAD_END + 1);
-                    if (c < '0' || c > '5') return false;
-                    if (c == '5') {
-                        c = key.charAt(SCHEMATIC_HEAD_END + 2);
-                        return c >= '0' && c <= '5';
-                    } else {
-                        c = key.charAt(SCHEMATIC_HEAD_END + 2);
-                        return c >= '0' && c <= '9';
-                    }
-                } else {
-                    c = key.charAt(SCHEMATIC_HEAD_END + 1);
-                    if (c < '0' || c > '9') return false;
-                    c = key.charAt(SCHEMATIC_HEAD_END + 2);
-                    return c >= '0' && c <= '9';
-                }
-            default: return false;
-        }
-        // int pos = PREFIX.length() + ".schematic.".length();
-        // if (pos == key.length()) return false;
-
-        // int idxs = key.length() - pos;
-
-        // if (idxs > 3) return false;
-
-        // if (idxs <= 2 && (key.charAt(pos) < '0' || key.charAt(pos) > '9')) return false;
-        // else if (key.charAt(pos) < '1' || key.charAt(pos) > '2') return false;
-
-        // if (idxs != 1 && key.charAt(pos) == '0') return false;
-
-        // if (idxs >= 2 && (key.charAt(pos + 1) < '0' || key.charAt(pos + 1) > '9')) return false;
-        // return idxs != 3 || (key.charAt(pos + 2) >= '0' && key.charAt(pos + 2) <= '9');
+        return Util.keyHasHeadByte(key, SCHEMATIC_HEAD);
     }
-    public static String keySchematic(Team team) {
+    private static String keySchematic(Team team) {
         return PREFIX+".schematic."+team.id;
     }
-    public static Team keySchematicTeam(String key) {
-        if (!keyIsSchematic(key)) throw new IllegalArgumentException("Not a schematic key.");
-        int pos = PREFIX.length() + ".schematic.".length();
-        return Team.all[Strings.parseInt(key, 10, 0, pos, key.length())];
+    private static Team keySchematicTeam(String key) {
+        return Team.all[Util.keyHeadByte(key, SCHEMATIC_HEAD)];
     }
 
     public class Impl extends FortsPlotKind.Impl implements FortsPlotKindRectangular {
@@ -124,8 +77,6 @@ public class FortsPlotKindSquare extends FortsPlotKind {
 
         @Override
         public void onStart() {
-            if (Vars.net.server()) return;
-
             plotStates.placeDefaultPlots(this::plotSchematic);
         }
 

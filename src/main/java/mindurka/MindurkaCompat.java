@@ -11,6 +11,8 @@ import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.mod.Mods;
 
+import java.nio.ByteBuffer;
+
 public class MindurkaCompat {
     private MindurkaCompat() {}
 
@@ -26,7 +28,7 @@ public class MindurkaCompat {
 
         Events.on(EventType.WorldLoadEndEvent.class, event -> {
             MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
-            if (MVars.rules.gamemode() != null && !MVars.mapEditor.isLoading()) MVars.rules.gamemode().onStart();
+            if (MVars.rules.gamemode() != null && !MVars.mapEditor.isLoading() && !Vars.net.active()) MVars.rules.gamemode().onStart();
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {
@@ -47,6 +49,30 @@ public class MindurkaCompat {
                     }
                 }));
             } else Injects.load();
+
+            ByteBuffer buffer = ByteBuffer.wrap(new byte[12]);
+            Vars.netClient.addBinaryPacketHandler("mindurka.setData", packet -> {
+                if (packet.length != 12) {
+                    Log.warn("[mindurka.setData]: Invalid packet length!");
+                    return;
+                }
+
+                buffer.clear();
+                buffer.put(packet);
+                short x = buffer.getShort(0);
+                short y = buffer.getShort(2);
+                long data = buffer.getLong(4);
+
+                if (x < 0 || x >= Vars.world.width()) {
+                    Log.warn("[mindurka.setData]: X ("+x+") is not within 0.."+Vars.world.width());
+                    return;
+                }
+                if (y < 0 || y >= Vars.world.height()) {
+                    Log.warn("[mindurka.setData]: Y ("+y+") is not within 0.."+Vars.world.height());
+                    return;
+                }
+                Vars.world.tile(x, y).setPackedData(data);
+            });
         });
     }
 }

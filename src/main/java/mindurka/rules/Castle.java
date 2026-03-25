@@ -100,7 +100,7 @@ public class Castle extends Gamemode {
                         effectData != null ? effectData.cost() : 0
                 ));
                 statusAllyMap.put(status,     read.r(STATUS+status+ALLY,
-                        effectData != null && effectData.ally()
+                        effectData == null || effectData.ally()
                 ));
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
                 groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());

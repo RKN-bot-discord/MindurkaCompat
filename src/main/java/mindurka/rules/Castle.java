@@ -19,8 +19,6 @@ import mindustry.world.Block;
 import mindustry.world.blocks.defense.turrets.Turret;
 import mindustry.world.meta.Env;
 
-import mindurka.rules.CastleCosts;
-
 import static mindustry.Vars.state;
 
 public class Castle extends Gamemode {
@@ -43,6 +41,7 @@ public class Castle extends Gamemode {
     public static final String DELAY = ".delay";
     public static final String DRILL =  ".drill";
 
+    public static final int PLATFORM_SIZE = 6;
 
     @Override
     public String name() {
@@ -112,6 +111,11 @@ public class Castle extends Gamemode {
                 divideCap = read.r(UTILS+"divideCap", true);
                 betterGroundValid = read.r(UTILS+"betterGroundValid", true);
                 noPlatform = read.r(UTILS+"noPlatform", false);
+                platformSource = new Seq<>();
+                int psCount = read.r(UTILS+"platformSource.count", 0);
+                for (int i = 0; i < psCount; i++) {
+                    platformSource.add(read.r(UTILS+"platformSource."+i, Schematic.EMPTY));
+                }
             }
         }
 
@@ -175,7 +179,10 @@ public class Castle extends Gamemode {
             write.b("rules.mindurka.castle.divideCap",      this::divideCap,      this::divideCap);
             write.spacer();
 
-            //  TODO: Platform source schematic realization
+            write.platformSources("rules.mindurka.castle.platformSource",
+                    this::platformSource,
+                    this::addPlatformSource,
+                    this::removePlatformSource);
             write.spacer();
 
             write.b("rules.mindurka.castle.noPlatform",       this::noPlatform,       this::noPlatform);
@@ -475,6 +482,39 @@ public class Castle extends Gamemode {
         public Impl betterGroundValid(boolean value) {
             betterGroundValid = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"betterGroundValid", value); }
+            return this;
+        }
+
+        // ── Platforms  ─────────────────────────────────────────────────────────────
+
+        private Seq<Schematic> platformSource;
+        public Seq<Schematic> platformSource() { return platformSource; }
+
+        private void savePlatformSource() {
+            try (TagWrite write = TagWrite.of(rc.rules)) {
+                write.w(UTILS+"platformSource.count", platformSource.size);
+                for (int i = 0; i < platformSource.size; i++) {
+                    write.w(UTILS+"platformSource."+i, platformSource.get(i));
+                }
+            }
+        }
+
+        public Impl addPlatformSource(Schematic value) {
+            platformSource.add(value);
+            savePlatformSource();
+            return this;
+        }
+
+        public Impl removePlatformSource(int index) {
+            if (index < 0 || index >= platformSource.size) return this;
+            platformSource.remove(index);
+            try (TagWrite write = TagWrite.of(rc.rules)) {
+                write.w(UTILS+"platformSource.count", platformSource.size);
+                rc.rules.tags.remove(UTILS+"platformSource."+platformSource.size);
+                for (int i = 0; i < platformSource.size; i++) {
+                    write.w(UTILS+"platformSource."+i, platformSource.get(i));
+                }
+            }
             return this;
         }
 

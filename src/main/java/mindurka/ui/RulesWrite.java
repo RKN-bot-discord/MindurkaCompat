@@ -42,6 +42,8 @@ import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
 
+import mindurka.MVars;
+
 /**
  * Utility class for writing rules.
  * <p>
@@ -853,6 +855,60 @@ public class RulesWrite {
         }).left().padLeft(6).row();
 
         return ctl;
+    }
+
+    public void platformSources(String tlKey,
+                                Prov<Seq<mindurka.util.Schematic>> def,
+                                Cons<mindurka.util.Schematic> onAdd,
+                                Cons<Integer> onRemove) {
+        if (!shouldAdd(tlKey)) return;
+
+        final Table[] rowsTable = {null};
+
+        root.table(outer -> {
+            outer.left();
+            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0);
+            outer.table(inner -> {
+                rowsTable[0] = inner;
+                rebuildPlatformSourceRows(inner, def, onAdd, onRemove, tlKey);
+            }).left();
+        }).padTop(0).pad(6).left().row();
+        root.row();
+    }
+
+    private void rebuildPlatformSourceRows(Table t,
+                                           Prov<Seq<mindurka.util.Schematic>> def,
+                                           Cons<mindurka.util.Schematic> onAdd,
+                                           Cons<Integer> onRemove,
+                                           String tlKey) {
+        t.clear();
+        t.defaults().left();
+
+        t.button("+", () -> {
+            MVars.mapView.editorAction = new mindurka.rules.SchematicEditorAction(
+                    mindurka.rules.Castle.PLATFORM_SIZE,
+                    mindurka.rules.Castle.PLATFORM_SIZE,
+                    scheme -> {
+                        onAdd.get(scheme);
+                        rebuildPlatformSourceRows(t, def, onAdd, onRemove, tlKey);
+                    }
+            );
+            MVars.customRulesDialog.hide();
+        }).size(32f).padBottom(2).left().row();
+
+        Seq<mindurka.util.Schematic> list = def.get();
+        for (int idx = 0; idx < list.size; idx++) {
+            final int i = idx;
+            t.table(row -> {
+                row.add().size(32f).padRight(4);
+                row.label(() -> (i+1) + ". " + mindurka.rules.Castle.PLATFORM_SIZE + "×" +
+                        mindurka.rules.Castle.PLATFORM_SIZE).left().padRight(8);
+                row.button("-", () -> {
+                    onRemove.get(i);
+                    rebuildPlatformSourceRows(t, def, onAdd, onRemove, tlKey);
+                }).size(32f).padLeft(4).left();
+            }).left().row();
+        }
     }
 
     public void spacer() {

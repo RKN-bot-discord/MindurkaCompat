@@ -292,6 +292,31 @@ public class OMapView extends MapView {
         return vec.set(px, py).add(this.x, this.y);
     }
 
+    public Vec2 unproject(float worldX, float worldY) {
+        float ratio = 1f / ((float) MVars.mapEditor.width() / MVars.mapEditor.height());
+        float size = Math.min(width, height);
+        float sclwidth = size * zoom;
+        float sclheight = size * zoom * ratio;
+
+        float px = (worldX / MVars.mapEditor.width()) * sclwidth
+                + offsetx * zoom
+                - sclwidth / 2f
+                + getWidth() / 2f;
+
+        float py = (worldY / MVars.mapEditor.height()) * sclheight
+                + offsety * zoom
+                - sclheight / 2f
+                + getHeight() / 2f;
+
+        return vec.set(px, py).add(this.x, this.y);
+    }
+
+    public Vec2 unprojectCenter(int tx, int ty) {
+        float cx = tx + 0.5f;
+        float cy = ty + 0.5f;
+        return unproject(cx, cy);
+    }
+
     public void moveByScaled(float dx, float dy) {
         offsetx += dx / zoom;
         offsety += dy / zoom;

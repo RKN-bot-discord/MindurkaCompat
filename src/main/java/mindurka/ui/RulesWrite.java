@@ -395,24 +395,38 @@ public class RulesWrite {
         return ctl;
     }
 
+    private void pickPoint(Cons<Point2> callback) {
+        MVars.mapView.editorAction = new mindurka.rules.PointEditorAction(p -> {
+            callback.get(p);
+            MVars.customRulesDialog.show();
+        });
+        MVars.customRulesDialog.hide();
+    }
+
     private void rebuildPointRows(Table t, Seq<Point2> current, PointsCtl ctl,
-                                   Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
+                                  Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
         t.clear();
         t.defaults().left();
 
-        // + always visible, even when list is empty
-        t.button("+", () -> {
-            current.add(new Point2(-1, -1));
+        // + picks a tile in the world and appends it
+        t.button("+", () -> pickPoint(p -> {
+            current.add(p);
             onClick.get(new Seq<>(current));
             rebuildPointRows(t, current, ctl, def, onClick);
-        }).size(32f).padBottom(2).left().row();
+        })).size(32f).padBottom(2).left().row();
 
         for (int idx = 0; idx < current.size; idx++) {
             final int i = idx;
             final int[] prev = {current.get(i).x, current.get(i).y};
 
             t.table(row -> {
-                row.add().size(32f).padRight(4); // spacer to align with + above
+                // "~" button: re-pick this entry's position from the world
+                row.button("~", () -> pickPoint(p -> {
+                    prev[0] = p.x;
+                    prev[1] = p.y;
+                    current.set(i, p);
+                    onClick.get(new Seq<>(current));
+                })).size(32f).padRight(4).left();
 
                 row.field(prev[0] + "", s -> {
                             int v = Strings.parseInt(s);

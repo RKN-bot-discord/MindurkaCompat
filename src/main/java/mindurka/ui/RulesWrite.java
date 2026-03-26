@@ -656,7 +656,7 @@ public class RulesWrite {
         }
         for (Team team : Team.all) {
             if (dataList.containsKey(team)) continue;
-            if (!enabled.get(team)) continue;
+            if (!enabled.get(team) && team.core()==null) continue;
             dataList.put(team, new TeamData(team));
         }
 

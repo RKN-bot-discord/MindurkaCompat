@@ -689,8 +689,8 @@ public class RulesWrite {
                     b.setDisabled(!ctl.enabled.get());
                     b.setChecked(false);
                     setDrawable(new TextureRegionDrawable(
-                        def.get().uiIcon,
-                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
                     ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
@@ -724,8 +724,8 @@ public class RulesWrite {
                 update(() -> {
                     b.setChecked(false);
                     setDrawable(new TextureRegionDrawable(
-                        def.get().uiIcon,
-                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
                     ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
@@ -759,8 +759,8 @@ public class RulesWrite {
                 update(() -> {
                     b.setChecked(false);
                     setDrawable(new TextureRegionDrawable(
-                        def.get().uiIcon,
-                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
                     ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
@@ -796,8 +796,8 @@ public class RulesWrite {
                     b.setChecked(false);
                     b.setDisabled(!ctl.enabled.get());
                     setDrawable(new TextureRegionDrawable(
-                        def.get().uiIcon,
-                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
                     ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
@@ -952,5 +952,151 @@ public class RulesWrite {
     }
     public void category(String name, Cons<RulesWrite> cb) {
         cb.get(category(name));
+    }
+
+    public TreeNode tree(String label, Cons<RulesWrite> contents, boolean expanded) {
+        final TreeNode node = new TreeNode(label, expanded);
+
+        root.button(label, Icon.downOpen, Styles.togglet, () -> node.shown = !node.shown)
+                .width(260).height(55).update(t -> {
+                    ((Image) t.getChildren().get(1)).setDrawable(node.buttonIcon());
+                    t.setChecked(node.shown);
+                }).left().padLeft(14).padBottom(2).row();
+
+        final Table contentTable = new Table();
+        contentTable.left();
+        contentTable.defaults().left();
+
+        root.collapser(c -> {
+            c.add(contentTable).padLeft(14).left().growX().row();
+        }, () -> node.shown).left().padBottom(2).fillX().row();
+
+        final RulesWrite child = new RulesWrite(contentTable, filter);
+        contents.get(child);
+
+        return node;
+    }
+
+    public TreeNode tree(String label, Cons<RulesWrite> contents) {
+        return tree(label, contents, false);
+    }
+
+    public interface AddTreeEntry<T> {
+        void add(String label, T value);
+    }
+
+    public <T> void treeAddEntry(String tlKey,
+                                 Cons<AddTreeEntry<T>> addEntry,
+                                 Cons<T> onClick,
+                                 T def) {
+        treeAddEntry(tlKey, addEntry, onClick, def, (value, child) -> {});
+    }
+
+    public <T> void treeAddEntry(String tlKey,
+                                 Cons<AddTreeEntry<T>> addEntry,
+                                 Cons<T> onClick,
+                                 T def,
+                                 Cons2<T, RulesWrite> sectionConf) {
+        if (!shouldAdd(tlKey)) return;
+
+        final Table container = new Table();
+        root.add(container).fillX().row();
+        container.defaults().left();
+
+        class AddRow {
+            boolean shown = false;
+            final Table mainContainer = new Table();
+
+            TextureRegionDrawable buttonIcon() { return shown ? Icon.downOpen : Icon.upOpen; }
+
+            AddRow() {
+                final Button headerButton = new Button(Styles.togglet);
+
+                final Image arrowIcon = new Image(Icon.upOpen);
+                headerButton.add(arrowIcon).size(Icon.upOpen.imageSize() / Scl.scl(1)).padLeft(4);
+                headerButton.add(new Image(Icon.add)).size(Icon.add.imageSize() / Scl.scl(1)).padLeft(6);
+
+                headerButton.clicked(() -> {
+                    shown = !shown;
+                    arrowIcon.setDrawable(buttonIcon());
+                    headerButton.setChecked(shown);
+                });
+                headerButton.update(() -> {
+                    arrowIcon.setDrawable(buttonIcon());
+                    headerButton.setChecked(shown);
+                });
+
+                mainContainer.add(headerButton)
+                        .marginLeft(14).height(55).padBottom(2).left().row();
+
+                mainContainer.collapser(picker -> {
+                    picker.defaults().left();
+                    picker.table(Tex.button, t -> {
+                        t.margin(10f);
+                        t.defaults().size(140f, 50f);
+                        final Seq<TextButton> buttons = new Seq<>();
+                        final ButtonGroup<?> group = new ButtonGroup<>();
+
+                        addEntry.get((label, value) -> {
+                            @SuppressWarnings("unchecked")
+                            Cell<TextButton>[] btn = new Cell[1];
+                            btn[0] = t.button(label, Styles.flatTogglet, () -> {
+                                buttons.each(b -> b.setChecked(false));
+                                btn[0].get().setChecked(true);
+                                onClick.get(value);
+
+                                final Table nodeTable = new Table();
+                                nodeTable.defaults().left();
+                                final TreeNode node = new TreeNode(label, true);
+
+                                nodeTable.button(label, Icon.downOpen, Styles.togglet,
+                                                () -> node.shown = !node.shown)
+                                        .marginLeft(14).width(260).height(55).update(th -> {
+                                            ((Image) th.getChildren().get(1)).setDrawable(node.buttonIcon());
+                                            th.setChecked(node.shown);
+                                        }).left().padBottom(2).row();
+
+                                nodeTable.collapser(c -> {
+                                    c.defaults().left();
+                                    RulesWrite child = new RulesWrite(c, filter);
+                                    child.parent = RulesWrite.this;
+                                    sectionConf.get(value, child);
+                                }, () -> node.shown).left().padBottom(2).fillX().row();
+
+                                container.removeChild(mainContainer);
+                                container.add(nodeTable).fillX().row();
+                                container.add(mainContainer).fillX().row();
+
+                                shown = false;
+                            }).group(group);
+
+                            btn[0].get().setChecked(value == null ? def == null : value.equals(def));
+                            if (buttons.size % 3 == 2) btn[0].row();
+                            buttons.add(btn[0].get());
+                        });
+                    }).left().pad(6).fill(false).expand(false, false).row();
+                }, () -> shown).left().padBottom(2).fillX().row();
+
+                container.add(mainContainer).fillX().row();
+            }
+        }
+
+        new AddRow();
+    }
+
+    public static class TreeNode {
+        public boolean shown;
+        private final String label;
+
+        TreeNode(String label, boolean shown) {
+            this.label = label;
+            this.shown = shown;
+        }
+
+        TextureRegionDrawable buttonIcon() {
+            return shown ? Icon.downOpen : Icon.upOpen;
+        }
+
+        public String label() { return label; }
     }
 }

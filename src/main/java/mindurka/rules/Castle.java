@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.Core;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.math.geom.Point2;
@@ -100,7 +101,7 @@ public class Castle extends Gamemode {
                         effectData != null ? effectData.cost() : 0
                 ));
                 statusAllyMap.put(status,     read.r(STATUS+status+ALLY,
-                        effectData == null || effectData.ally()
+                        effectData != null ? effectData.ally() : false
                 ));
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
                 groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());
@@ -121,54 +122,70 @@ public class Castle extends Gamemode {
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
-            write.selectionRaw("rules.mindurka.castle.turret", addEntry -> {
+            write.tree("@rules.mindurka.castle.turret", turretRoot -> {
                 for (Block b : mindustry.Vars.content.blocks()) {
-                    if (b instanceof Turret t) {
-                        addEntry.add(t.localizedName + t.emoji(), t);
-                    }
+                    if (!(b instanceof Turret t)) continue;
+                    turretRoot.tree(t.localizedName + t.emoji(), cfg -> {
+                        cfg.i("rules.mindurka.castle.turret.cost",
+                                () -> blockCostFor(t),
+                                v -> blockCostFor(t, v));
+                    });
                 }
-            }, this::block, block);
-            {
-                RulesWrite blockTable = write.table();
-                blockTable.i("rules.mindurka.castle.turret.cost", this::blockCost, this::blockCost);
-            }
-            write.spacer();
-            write.selectionRaw("rules.mindurka.castle.unit", addEntry -> {
-                for (UnitType u : mindustry.Vars.content.units()) addEntry.add(u.localizedName+u.emoji(), u);
-            }, this::unit, unit);
-            {
-                RulesWrite unitTable = write.table();
-                unitTable.i("rules.mindurka.castle.unit.cost", this::unitCost, this::unitCost);
-                unitTable.i("rules.mindurka.castle.unit.income", this::unitIncome, this::unitIncome);
-                unitTable.i("rules.mindurka.castle.unit.drop", this::unitDrop, this::unitDrop);
-            }
+            });
+            write.tree("@rules.mindurka.castle.unit", unitRoot -> {
+                for (UnitType u : mindustry.Vars.content.units()) {
+                    unitRoot.tree(u.localizedName + u.emoji(), cfg -> {
+                        cfg.i("rules.mindurka.castle.unit.cost",
+                                () -> unitCostFor(u),
+                                v -> unitCostFor(u, v));
+                        cfg.i("rules.mindurka.castle.unit.income",
+                                () -> unitIncomeFor(u),
+                                v -> unitIncomeFor(u, v));
+                        cfg.i("rules.mindurka.castle.unit.drop",
+                                () -> unitDropFor(u),
+                                v -> unitDropFor(u, v));
+                    });
+                }
+            });
+            write.tree("@rules.mindurka.castle.item", itemRoot -> {
+                for (Item i : mindustry.Vars.content.items()) {
+                    itemRoot.tree(i.localizedName + i.emoji(), cfg -> {
+                        cfg.i("rules.mindurka.castle.item.cost",
+                                () -> itemCostFor(i),
+                                v -> itemCostFor(i, v));
+                        cfg.i("rules.mindurka.castle.item.interval",
+                                () -> itemIntervalFor(i),
+                                v -> itemIntervalFor(i, v));
+                        cfg.i("rules.mindurka.castle.item.amount",
+                                () -> itemAmountFor(i),
+                                v -> itemAmountFor(i, v));
+                        cfg.block("rules.mindurka.castle.drill",
+                                d -> drillFor(i, d),
+                                () -> drillFor(i)).filter(d -> true);
+                    });
+                }
+            });
+            write.tree("@rules.mindurka.castle.status", statusRoot -> {
+                for (StatusEffect s : mindustry.Vars.content.statusEffects()) {
+                    statusRoot.tree(s.localizedName + s.emoji(), cfg -> {
+                        cfg.i("rules.mindurka.castle.status.cost",
+                                () -> statusCostFor(s),
+                                v -> statusCostFor(s, v));
+                        cfg.i("rules.mindurka.castle.status.delay",
+                                () -> statusDelayFor(s),
+                                v -> statusDelayFor(s, v));
+                        cfg.i("rules.mindurka.castle.status.duration",
+                                () -> statusDurationFor(s),
+                                v -> statusDurationFor(s, v));
+                        cfg.b("rules.mindurka.castle.status.ally",
+                                () -> statusAllyFor(s),
+                                v -> statusAllyFor(s, v));
+                    });
+                }
+            });
+
             write.spacer();
 
-            write.selectionRaw("rules.mindurka.castle.item", addEntry -> {
-                for (Item i : mindustry.Vars.content.items()) addEntry.add(i.localizedName+i.emoji(), i);
-            }, this::item, item);
-            {
-                RulesWrite itemTable = write.table();
-                itemTable.i("rules.mindurka.castle.item.interval", this::itemInterval, this::itemInterval);
-                itemTable.i("rules.mindurka.castle.item.amount",   this::itemAmount,   this::itemAmount);
-                itemTable.i("rules.mindurka.castle.item.cost",     this::itemCost,     this::itemCost);
-                itemTable.block("rules.mindurka.castle.drill",     this::drill,        this::drill).filter(d -> true);
-            }
-            write.spacer();
-
-            write.selectionRaw("rules.mindurka.castle.status", addEntry -> {
-                for (StatusEffect s : mindustry.Vars.content.statusEffects()) addEntry.add(s.localizedName+s.emoji(), s);
-            }, this::status, status);
-            {
-                RulesWrite statusTable = write.table();
-                statusTable.i("rules.mindurka.castle.status.cost",     this::statusCost,     this::statusCost);
-                statusTable.i("rules.mindurka.castle.status.delay",    this::statusDelay,    this::statusDelay);
-                statusTable.i("rules.mindurka.castle.status.duration", this::statusDuration, this::statusDuration);
-                statusTable.b("rules.mindurka.castle.status.ally",     this::statusAlly,     this::statusAlly);
-            }
-            write.spacer();
-
-            // TODO: make this a tool instead of this
             write.points("rules.mindurka.castle.groundSpawn", this::groundSpawn, this::groundSpawn);
             write.points("rules.mindurka.castle.airSpawn",    this::airSpawn,    this::airSpawn);
             write.points("rules.mindurka.castle.navalSpawn",  this::navalSpawn,  this::navalSpawn);
@@ -199,6 +216,177 @@ public class Castle extends Gamemode {
                 if (key.startsWith("mdrk.castle.")) toRemove.add(key);
             });
             toRemove.each(rules.tags::remove);
+        }
+
+        public int blockCostFor(Block b) {
+            try (TagRead read = TagRead.of(rc.rules)) {
+                return read.r(TURRET + b + COST, CastleCosts.turrets.get((Turret) b, 0));
+            }
+        }
+        public Impl blockCostFor(Block b, int value) {
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(TURRET + b + COST, value); }
+            if (b == block) blockCost = value;
+            return this;
+        }
+
+        private final ObjectMap<UnitType, Integer> unitCostMap   = new ObjectMap<>();
+        private final ObjectMap<UnitType, Integer> unitIncomeMap = new ObjectMap<>();
+        private final ObjectMap<UnitType, Integer> unitDropMap   = new ObjectMap<>();
+
+        public int unitCostFor(UnitType u) {
+            return unitCostMap.get(u, () -> {
+                CastleCosts.UnitData d = CastleCosts.units.get(u);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(UNIT + u + COST, d != null ? d.cost() : 0);
+                }
+            });
+        }
+        public Impl unitCostFor(UnitType u, int value) {
+            unitCostMap.put(u, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(UNIT + u + COST, value); }
+            if (u == unit) unitCost = value;
+            return this;
+        }
+
+        public int unitIncomeFor(UnitType u) {
+            return unitIncomeMap.get(u, () -> {
+                CastleCosts.UnitData d = CastleCosts.units.get(u);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(UNIT + u + INCOME, d != null ? d.income() : 0);
+                }
+            });
+        }
+        public Impl unitIncomeFor(UnitType u, int value) {
+            unitIncomeMap.put(u, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(UNIT + u + INCOME, value); }
+            if (u == unit) unitIncome = value;
+            return this;
+        }
+
+        public int unitDropFor(UnitType u) {
+            return unitDropMap.get(u, () -> {
+                CastleCosts.UnitData d = CastleCosts.units.get(u);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(UNIT + u + DROP, d != null ? d.drop() : 0);
+                }
+            });
+        }
+        public Impl unitDropFor(UnitType u, int value) {
+            unitDropMap.put(u, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(UNIT + u + DROP, value); }
+            if (u == unit) unitDrop = value;
+            return this;
+        }
+
+        public int itemCostFor(Item i) {
+            return itemCostMap.get(i, () -> {
+                CastleCosts.ItemData d = CastleCosts.items.get(i);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(ITEM + i + COST, d != null ? d.cost() : 0);
+                }
+            });
+        }
+        public Impl itemCostFor(Item i, int value) {
+            itemCostMap.put(i, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(ITEM + i + COST, value); }
+            return this;
+        }
+
+        public int itemIntervalFor(Item i) {
+            return itemIntervalMap.get(i, () -> {
+                CastleCosts.ItemData d = CastleCosts.items.get(i);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(ITEM + i + INTERVAL, d != null ? d.interval() : 0);
+                }
+            });
+        }
+        public Impl itemIntervalFor(Item i, int value) {
+            itemIntervalMap.put(i, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(ITEM + i + INTERVAL, value); }
+            return this;
+        }
+
+        public int itemAmountFor(Item i) {
+            return itemAmountMap.get(i, () -> {
+                CastleCosts.ItemData d = CastleCosts.items.get(i);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(ITEM + i + AMOUNT, d != null ? d.amount() : 0);
+                }
+            });
+        }
+        public Impl itemAmountFor(Item i, int value) {
+            itemAmountMap.put(i, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(ITEM + i + AMOUNT, value); }
+            return this;
+        }
+
+        public Block drillFor(Item i) {
+            return drillMap.get(i, () -> {
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(ITEM + i + DRILL, drillGet(i));
+                }
+            });
+        }
+        public Impl drillFor(Item i, Block value) {
+            drillMap.put(i, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(ITEM + i + DRILL, value); }
+            return this;
+        }
+
+        public int statusCostFor(StatusEffect s) {
+            return statusCostMap.get(s, () -> {
+                CastleCosts.EffectData d = CastleCosts.effects.get(s);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(STATUS + s + COST, d != null ? d.cost() : 0);
+                }
+            });
+        }
+        public Impl statusCostFor(StatusEffect s, int value) {
+            statusCostMap.put(s, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(STATUS + s + COST, value); }
+            return this;
+        }
+
+        public int statusDelayFor(StatusEffect s) {
+            return statusDelayMap.get(s, () -> {
+                CastleCosts.EffectData d = CastleCosts.effects.get(s);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(STATUS + s + DELAY, d != null ? d.delay() : 0);
+                }
+            });
+        }
+        public Impl statusDelayFor(StatusEffect s, int value) {
+            statusDelayMap.put(s, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(STATUS + s + DELAY, value); }
+            return this;
+        }
+
+        public int statusDurationFor(StatusEffect s) {
+            return statusDurationMap.get(s, () -> {
+                CastleCosts.EffectData d = CastleCosts.effects.get(s);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(STATUS + s + DURATION, d != null ? d.duration() : 0);
+                }
+            });
+        }
+        public Impl statusDurationFor(StatusEffect s, int value) {
+            statusDurationMap.put(s, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(STATUS + s + DURATION, value); }
+            return this;
+        }
+
+        public boolean statusAllyFor(StatusEffect s) {
+            return statusAllyMap.get(s, () -> {
+                CastleCosts.EffectData d = CastleCosts.effects.get(s);
+                try (TagRead read = TagRead.of(rc.rules)) {
+                    return read.r(STATUS + s + ALLY, d != null && d.ally());
+                }
+            });
+        }
+        public Impl statusAllyFor(StatusEffect s, boolean value) {
+            statusAllyMap.put(s, value);
+            try (TagWrite w = TagWrite.of(rc.rules)) { w.w(STATUS + s + ALLY, value); }
+            return this;
         }
 
         private Block drillGet(Item item) {
@@ -387,7 +575,7 @@ public class Castle extends Gamemode {
                         effectData != null ? effectData.cost() : 0
                 ));
                 statusAllyMap.put(status,     read.r(STATUS+status+ALLY,
-                        effectData != null && effectData.ally()
+                        effectData != null ? effectData.ally() : false
                 ));
             }
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(STATUS, value); }

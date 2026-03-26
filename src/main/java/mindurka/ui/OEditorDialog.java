@@ -286,15 +286,20 @@ public class OEditorDialog extends MapEditorDialog {
             {
                 mid.top();
 
-                mid.table(t -> {
-                    for (Team team : Team.baseTeams) {
+                mid.table(row -> {
+                    Seq<Team> baseTeams = Seq.with(Team.baseTeams);
+                    Seq<Team> coreTeams = Seq.with(Team.all)
+                            .select(t -> t != null && !t.cores().isEmpty() && !baseTeams.contains(t));
+
+                    Seq<Team> teams = baseTeams.addAll(coreTeams);
+                    for (Team team : teams) {
                         ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNoneTogglei);
                         button.margin(4f);
                         button.getImageCell().grow();
                         button.getStyle().imageUpColor = team.color;
                         button.clicked(() -> MVars.toolOptions.team = team);
                         button.update(() -> button.setChecked(MVars.toolOptions.team == team));
-                        t.add(button).size(size, size).left();
+                        row.add(button).size(size, size).left();
                     }
                 }).growX().left();
                 mid.row();

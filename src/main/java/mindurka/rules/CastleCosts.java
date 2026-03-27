@@ -84,15 +84,15 @@ public class CastleCosts {
         );
 
         effects = OrderedMap.of(
-                StatusEffects.overclock, new EffectData(4000, 20, true, 20),
-                StatusEffects.overdrive, new EffectData(12000, 30, true, 30),
-                StatusEffects.boss, new EffectData(36000, 40, true, 40),
-                StatusEffects.shielded, new EffectData(72000, 10, true, 10),
+                StatusEffects.overclock, new EffectData(4000, 20, 20, true),
+                StatusEffects.overdrive, new EffectData(12000, 30, 30, true),
+                StatusEffects.boss, new EffectData(36000, 40, 40, true),
+                StatusEffects.shielded, new EffectData(72000, 10, 10, true),
 
-                StatusEffects.sporeSlowed, new EffectData(12000, 25, false, 25),
-                StatusEffects.electrified, new EffectData(24000, 20, false, 20),
-                StatusEffects.sapped, new EffectData(36000, 15, false, 15),
-                StatusEffects.unmoving, new EffectData(96000, 5, false, 25)
+                StatusEffects.sporeSlowed, new EffectData(12000, 25, 25, false),
+                StatusEffects.electrified, new EffectData(24000, 20, 20, false),
+                StatusEffects.sapped, new EffectData(36000, 15, 15, false),
+                StatusEffects.unmoving, new EffectData(96000, 5, 25, false)
         );
 
         turrets = OrderedMap.of(
@@ -147,13 +147,37 @@ public class CastleCosts {
     }
 
 
-    public record UnitData(int cost, int income, int drop) { }
 
-
-    public record EffectData(int cost, int duration, boolean ally, int delay) {
+    public static class UnitData {
+        public final int cost, income, drop;
+        public UnitData(int cost, int income, int drop) {
+            this.cost = cost; this.income = income; this.drop = drop;
+        }
+        public int cost() { return cost; }
+        public int income() { return income; }
+        public int drop() { return drop; }
     }
 
 
-    public record ItemData(int cost, int interval, int amount) {
+    public static class EffectData {
+        public final int cost, duration, delay;
+        public final boolean ally;
+        public EffectData(int cost, int duration, int delay, boolean ally) {
+            this.cost = cost; this.duration = duration; this.delay = delay; this.ally = ally;
+        }
+        public int cost() { return cost; }
+        public int duration() { return duration; }
+        public int delay() { return delay; }
+        public boolean ally() {return ally;}
+    }
+
+    public static class ItemData {
+        public final int cost, interval, amount;
+        public ItemData(int cost, int interval, int amount) {
+            this.cost = cost; this.interval = interval; this.amount = amount;
+        }
+        public int cost() { return cost; }
+        public int interval() { return interval; }
+        public int amount() { return amount; }
     }
 }

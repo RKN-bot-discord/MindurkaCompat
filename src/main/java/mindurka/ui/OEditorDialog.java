@@ -292,7 +292,9 @@ public class OEditorDialog extends MapEditorDialog {
                             .select(t -> t != null && !t.cores().isEmpty() && !baseTeams.contains(t));
 
                     Seq<Team> teams = baseTeams.addAll(coreTeams);
+                    int i = 0;
                     for (Team team : teams) {
+                        if (i > 0 && i % 6 == 0) row.row();
                         ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNoneTogglei);
                         button.margin(4f);
                         button.getImageCell().grow();
@@ -300,6 +302,7 @@ public class OEditorDialog extends MapEditorDialog {
                         button.clicked(() -> MVars.toolOptions.team = team);
                         button.update(() -> button.setChecked(MVars.toolOptions.team == team));
                         row.add(button).size(size, size).left();
+                        i++;
                     }
                 }).growX().left();
                 mid.row();

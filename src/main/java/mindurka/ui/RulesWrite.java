@@ -41,6 +41,7 @@ import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
+import mindustry.world.blocks.environment.Floor;
 
 import mindurka.MVars;
 
@@ -913,10 +914,20 @@ public class RulesWrite {
         Seq<mindurka.util.Schematic> list = def.get();
         for (int idx = 0; idx < list.size; idx++) {
             final int i = idx;
+            StringBuilder platformString = new StringBuilder();
+            StringBuilder stringTemp = new StringBuilder();
+            Seq<Floor> floors = Seq.with(list.get(i).floors);
+            int count = 0;
+            for (int j = floors.size - 1; j >= 0; j--) {
+                stringTemp.insert(0,floors.get(j).emoji());
+                if (++count % 6 == 0){
+                    platformString.append(stringTemp+"\n");
+                    stringTemp.setLength(0);
+                }
+            }
             t.table(row -> {
                 row.add().size(32f).padRight(4);
-                row.label(() -> (i+1) + ". " + mindurka.rules.Castle.PLATFORM_SIZE + "×" +
-                        mindurka.rules.Castle.PLATFORM_SIZE).left().padRight(8);
+                row.label(() -> (i+1) + ". \n" + platformString).left().padRight(8);
                 row.button("-", () -> {
                     onRemove.get(i);
                     rebuildPlatformSourceRows(t, def, onAdd, onRemove, tlKey);

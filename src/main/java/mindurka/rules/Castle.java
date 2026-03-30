@@ -38,7 +38,7 @@ public class Castle extends Gamemode {
     public static final String DELAY = ".delay";
     public static final String DRILL =  ".drill";
 
-    public static final int PLATFORM_SIZE = 6;
+    public static final int PLATFORM_SIZE = 5;
 
     @Override
     public String name() {

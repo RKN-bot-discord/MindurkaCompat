@@ -920,7 +920,7 @@ public class RulesWrite {
             int count = 0;
             for (int j = floors.size - 1; j >= 0; j--) {
                 stringTemp.insert(0,floors.get(j).emoji());
-                if (++count % 6 == 0){
+                if (++count % 5 == 0){
                     platformString.append(stringTemp+"\n");
                     stringTemp.setLength(0);
                 }

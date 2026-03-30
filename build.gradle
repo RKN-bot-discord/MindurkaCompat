@@ -19,9 +19,8 @@ repositories {
 
 allprojects {
     tasks.withType(JavaCompile).configureEach {
-        targetCompatibility = 16
-        sourceCompatibility = 16
-
+        targetCompatibility = 8
+        sourceCompatibility = 8
         options.forkOptions.jvmArgs += [
                 '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
                 '--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',

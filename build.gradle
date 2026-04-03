@@ -14,8 +14,11 @@ compileJava.options.encoding = "UTF-8"
 
 repositories {
     mavenCentral()
-    maven { url "https://raw.githubusercontent.com/Zelaux/MindustryRepo/master/repository" }
-    maven { url 'https://www.jitpack.io' }
+    ivy {
+        url 'https://github.com/'
+        patternLayout { artifact '/[organisation]/[module]/releases/download/[revision]/dependencies.jar' }
+        metadataSources { artifact() }
+    }
 }
 
 allprojects {
@@ -37,19 +40,10 @@ allprojects {
 }
 
 dependencies {
-    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
-    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+    compileOnly "Anuken:Mindustry:$mindustryVersion"
 
     compileOnly "org.projectlombok:lombok:1.18.42"
     annotationProcessor "org.projectlombok:lombok:1.18.42"
-
-    // testImplementation "com.github.Anuken.Mindustry:core:$mindustryVersion"
-    // testImplementation "com.github.Anuken.Arc:arc-core:$mindustryVersion"
-    // testImplementation "com.github.Anuken.Arc:natives:$mindustryVersion"
-    // testImplementation "com.github.Anuken.Arc:backend-headless:$mindustryVersion"
-    // testImplementation(platform("org.junit:junit-bom:6.0.0"))
-    // testImplementation "org.junit.jupiter:junit-jupiter"
-    // testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 jar {

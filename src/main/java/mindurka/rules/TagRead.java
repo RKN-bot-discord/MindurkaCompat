@@ -83,7 +83,7 @@ public class TagRead implements AutoCloseable {
         if (value == null) return de;
         return value;
     }
-    public Point2 r(String key, Point2 de) {
+    public Point2 rPoint(String key, Point2 de) {
         if (rules == null) return de;
         String value = rules.tags.get(key);
         if (value == null) return de;
@@ -95,7 +95,7 @@ public class TagRead implements AutoCloseable {
             return de;
         }
     }
-    public arc.struct.Seq<Point2> r(String key, arc.struct.Seq<Point2> de) {
+    public Seq<Point2> rPoints(String key, Seq<Point2> de) {
         if (rules == null) return de;
         String value = rules.tags.get(key);
         if (value == null || value.isEmpty()) return de;

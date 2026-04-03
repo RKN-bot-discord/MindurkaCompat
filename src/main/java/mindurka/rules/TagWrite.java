@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.struct.Seq;
 import arc.math.geom.Point2;
 import mindurka.util.Schematic;
 import mindustry.game.Rules;
@@ -55,11 +56,11 @@ public class TagWrite implements AutoCloseable {
         if (rules == null) return;
         rules.tags.put(key, v);
     }
-    public void w(String key, Point2 v) {
+    public void wPoint(String key, Point2 v) {
         if (rules == null) return;
         rules.tags.put(key, v.x + " " + v.y);
     }
-    public void w(String key, arc.struct.Seq<arc.math.geom.Point2> v) {
+    public void wPoints(String key, Seq<Point2> v) {
         if (rules == null) return;
         if (v == null || v.size == 0) { rules.tags.remove(key); return; }
         StringBuilder sb = new StringBuilder();

@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.struct.ObjectIntMap;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.math.geom.Point2;
@@ -57,9 +58,9 @@ public class Castle extends Gamemode {
             try (TagRead read = TagRead.of(rc.rules)) {
                 CastleCosts.load();
                 shopFloor = read.r(UTILS+"shopFloor", Blocks.empty);
-                groundSpawn = read.r(UTILS+"groundSpawn", new Seq<>());
-                navalSpawn = read.r(UTILS+"navalSpawn", new Seq<>());
-                airSpawn = read.r(UTILS+"airSpawn", new Seq<>());
+                groundSpawn = read.rPoints(UTILS+"groundSpawn", new Seq<>());
+                navalSpawn = read.rPoints(UTILS+"navalSpawn", new Seq<>());
+                airSpawn = read.rPoints(UTILS+"airSpawn", new Seq<>());
                 attackUnitCap = read.r(UTILS+"attackUnitCap", -1);
                 defenseUnitCap = read.r(UTILS+"defenseUnitCap", 75);
                 divideCap = read.r(UTILS+"divideCap", true);
@@ -171,16 +172,23 @@ public class Castle extends Gamemode {
             toRemove.each(rules.tags::remove);
         }
 
+        private final ObjectIntMap<Block> blockCostMap = new ObjectIntMap<>();
+
         public int blockCostFor(Block b) {
+            if (blockCostMap.containsKey(b)) return blockCostMap.get(b, 0);
+            int def;
             try (TagRead read = TagRead.of(rc.rules)) {
-                return read.r(TURRET + b + COST, CastleCosts.turrets.get((Turret) b, 0));
+                def = read.r(TURRET + b + COST, CastleCosts.turrets.get((Turret) b, 0));
             }
+            blockCostMap.put(b, def);
+            return def;
         }
+
         public Impl blockCostFor(Block b, int value) {
+            blockCostMap.put(b, value);
             try (TagWrite w = TagWrite.of(rc.rules)) { w.w(TURRET + b + COST, value); }
             return this;
         }
-
         private final ObjectMap<UnitType, Integer> unitCostMap   = new ObjectMap<>();
         private final ObjectMap<UnitType, Integer> unitIncomeMap = new ObjectMap<>();
         private final ObjectMap<UnitType, Integer> unitDropMap   = new ObjectMap<>();
@@ -227,18 +235,20 @@ public class Castle extends Gamemode {
             return this;
         }
 
-        private final ObjectMap<Item, Integer> itemCostMap     = new ObjectMap<>();
-        private final ObjectMap<Item, Integer> itemIntervalMap = new ObjectMap<>();
-        private final ObjectMap<Item, Integer> itemAmountMap   = new ObjectMap<>();
-        private final ObjectMap<Item, Block>   drillMap        = new ObjectMap<>();
+        private final ObjectIntMap<Item> itemCostMap     = new ObjectIntMap<>();
+        private final ObjectIntMap<Item> itemIntervalMap = new ObjectIntMap<>();
+        private final ObjectIntMap<Item> itemAmountMap   = new ObjectIntMap<>();
+        private final ObjectMap<Item,Block>   drillMap        = new ObjectMap<>();
 
         public int itemCostFor(Item i) {
-            return itemCostMap.get(i, () -> {
-                CastleCosts.ItemData d = CastleCosts.items.get(i);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(ITEM + i + COST, d != null ? d.cost() : 0);
-                }
-            });
+            if (itemCostMap.containsKey(i)) return itemCostMap.get(i, 0);
+            CastleCosts.ItemData d = CastleCosts.items.get(i);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(ITEM + i + COST, d != null ? d.cost() : 0);
+            }
+            itemCostMap.put(i, def);
+            return def;
         }
         public Impl itemCostFor(Item i, int value) {
             itemCostMap.put(i, value);
@@ -247,12 +257,14 @@ public class Castle extends Gamemode {
         }
 
         public int itemIntervalFor(Item i) {
-            return itemIntervalMap.get(i, () -> {
-                CastleCosts.ItemData d = CastleCosts.items.get(i);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(ITEM + i + INTERVAL, d != null ? d.interval() : 0);
-                }
-            });
+            if (itemIntervalMap.containsKey(i)) return itemIntervalMap.get(i, 0);
+            CastleCosts.ItemData d = CastleCosts.items.get(i);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(ITEM + i + INTERVAL, d != null ? d.interval() : 0);
+            }
+            itemIntervalMap.put(i, def);
+            return def;
         }
         public Impl itemIntervalFor(Item i, int value) {
             itemIntervalMap.put(i, value);
@@ -261,12 +273,14 @@ public class Castle extends Gamemode {
         }
 
         public int itemAmountFor(Item i) {
-            return itemAmountMap.get(i, () -> {
-                CastleCosts.ItemData d = CastleCosts.items.get(i);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(ITEM + i + AMOUNT, d != null ? d.amount() : 0);
-                }
-            });
+            if (itemAmountMap.containsKey(i)) return itemAmountMap.get(i, 0);
+            CastleCosts.ItemData d = CastleCosts.items.get(i);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(ITEM + i + AMOUNT, d != null ? d.amount() : 0);
+            }
+            itemAmountMap.put(i, def);
+            return def;
         }
         public Impl itemAmountFor(Item i, int value) {
             itemAmountMap.put(i, value);
@@ -287,18 +301,20 @@ public class Castle extends Gamemode {
             return this;
         }
 
-        private final ObjectMap<StatusEffect, Integer> statusDelayMap    = new ObjectMap<>();
-        private final ObjectMap<StatusEffect, Integer> statusDurationMap = new ObjectMap<>();
-        private final ObjectMap<StatusEffect, Integer> statusCostMap     = new ObjectMap<>();
+        private final ObjectIntMap<StatusEffect> statusDelayMap    = new ObjectIntMap<>();
+        private final ObjectIntMap<StatusEffect> statusDurationMap = new ObjectIntMap<>();
+        private final ObjectIntMap<StatusEffect> statusCostMap     = new ObjectIntMap<>();
         private final ObjectMap<StatusEffect, Boolean> statusAllyMap     = new ObjectMap<>();
 
         public int statusCostFor(StatusEffect s) {
-            return statusCostMap.get(s, () -> {
-                CastleCosts.EffectData d = CastleCosts.effects.get(s);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(STATUS + s + COST, d != null ? d.cost() : 0);
-                }
-            });
+            if (statusCostMap.containsKey(s)) return statusCostMap.get(s, 0);
+            CastleCosts.EffectData d = CastleCosts.effects.get(s);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(STATUS + s + COST, d != null ? d.cost() : 0);
+            }
+            statusCostMap.put(s, def);
+            return def;
         }
         public Impl statusCostFor(StatusEffect s, int value) {
             statusCostMap.put(s, value);
@@ -307,12 +323,14 @@ public class Castle extends Gamemode {
         }
 
         public int statusDelayFor(StatusEffect s) {
-            return statusDelayMap.get(s, () -> {
-                CastleCosts.EffectData d = CastleCosts.effects.get(s);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(STATUS + s + DELAY, d != null ? d.delay() : 0);
-                }
-            });
+            if (statusDelayMap.containsKey(s)) return statusDelayMap.get(s, 0);
+            CastleCosts.EffectData d = CastleCosts.effects.get(s);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(STATUS + s + DELAY, d != null ? d.delay() : 0);
+            }
+            statusDelayMap.put(s, def);
+            return def;
         }
         public Impl statusDelayFor(StatusEffect s, int value) {
             statusDelayMap.put(s, value);
@@ -321,12 +339,14 @@ public class Castle extends Gamemode {
         }
 
         public int statusDurationFor(StatusEffect s) {
-            return statusDurationMap.get(s, () -> {
-                CastleCosts.EffectData d = CastleCosts.effects.get(s);
-                try (TagRead read = TagRead.of(rc.rules)) {
-                    return read.r(STATUS + s + DURATION, d != null ? d.duration() : 0);
-                }
-            });
+            if (statusDurationMap.containsKey(s)) return statusDurationMap.get(s, 0);
+            CastleCosts.EffectData d = CastleCosts.effects.get(s);
+            int def;
+            try (TagRead read = TagRead.of(rc.rules)) {
+                def = read.r(STATUS + s + DELAY, d != null ? d.duration() : 0);
+            }
+            statusDurationMap.put(s, def);
+            return def;
         }
         public Impl statusDurationFor(StatusEffect s, int value) {
             statusDurationMap.put(s, value);
@@ -398,7 +418,7 @@ public class Castle extends Gamemode {
         public Seq<Point2> groundSpawn() { return groundSpawn; }
         public Impl groundSpawn(Seq<Point2> value) {
             groundSpawn = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"groundSpawn", value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.wPoints(UTILS+"groundSpawn", value); }
             return this;
         }
 
@@ -406,7 +426,7 @@ public class Castle extends Gamemode {
         public Seq<Point2> airSpawn() { return airSpawn; }
         public Impl airSpawn(Seq<Point2> value) {
             airSpawn = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"airSpawn", value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.wPoints(UTILS+"airSpawn", value); }
             return this;
         }
 
@@ -414,7 +434,7 @@ public class Castle extends Gamemode {
         public Seq<Point2> navalSpawn() { return navalSpawn; }
         public Impl navalSpawn(Seq<Point2> value) {
             navalSpawn = value;
-            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"navalSpawn", value); }
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.wPoints(UTILS+"navalSpawn", value); }
             return this;
         }
 

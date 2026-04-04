@@ -343,7 +343,7 @@ public class Castle extends Gamemode {
             CastleCosts.EffectData d = CastleCosts.effects.get(s);
             int def;
             try (TagRead read = TagRead.of(rc.rules)) {
-                def = read.r(STATUS + s + DELAY, d != null ? d.duration() : 0);
+                def = read.r(STATUS + s + DURATION, d != null ? d.duration() : 0);
             }
             statusDurationMap.put(s, def);
             return def;

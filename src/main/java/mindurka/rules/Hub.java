@@ -37,7 +37,7 @@ public class Hub extends Gamemode {
             try (TagRead read = TagRead.of(rc.rules)) {
                 try {
                     Jval.JsonArray array = Jval.read(read.r(SERVERS, "[]")).asArray();
-                    array.forEach(x -> {
+                    array.each(x -> {
                         try {
                             Jval.JsonMap obj = x.asObject();
                             assert obj.get("version").asInt() == 1;

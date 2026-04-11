@@ -43,7 +43,7 @@ public class MindurkaCompat {
                     Injects.load();
                     try {
                         Class<?> eui = Class.forName("MinRi2.PatchEditor.ui.EUI");
-                        Reflect.invoke(eui, null, "addUI", Util.noargs);
+                        Reflect.invoke(eui, null, "mountEditor", Util.noargs);
                     } catch (Throwable e) {
                         Report.withException(e);
                     }

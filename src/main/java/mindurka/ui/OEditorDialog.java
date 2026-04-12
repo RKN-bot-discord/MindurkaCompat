@@ -374,6 +374,11 @@ public class OEditorDialog extends MapEditorDialog {
                         tools.row();
                         addTool.get(EditorTool.hubServerConfig);
                     }
+                    if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.castle) {
+                        tools.row();
+                        addTool.get(EditorTool.castleRoomPlace);
+                        addTool.get(EditorTool.castleMinerPlacer);
+                    }
                 };
                 refreshTools.run();
 
@@ -493,7 +498,7 @@ public class OEditorDialog extends MapEditorDialog {
         }
     }
 
-    private void rebuildBlockOptions() {
+    void rebuildBlockOptions() {
         float size = Vars.mobile ? 50f : 58f;
 
         blockOptions.clearChildren();

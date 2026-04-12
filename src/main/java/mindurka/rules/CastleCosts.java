@@ -9,13 +9,13 @@ import mindustry.content.UnitTypes;
 import mindustry.type.Item;
 import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
-import mindustry.world.blocks.defense.turrets.Turret;
+import mindustry.world.Block;
 
 public class CastleCosts {
     public static OrderedMap<UnitType, UnitData> units;
     public static OrderedMap<StatusEffect, EffectData> effects;
 
-    public static OrderedMap<Turret, Integer> turrets;
+    public static OrderedMap<Block, Integer> turrets;
     public static OrderedMap<Item, ItemData> items;
 
     public static void load() {

@@ -46,6 +46,8 @@ public class OMapView extends MapView {
     private boolean dragging;
     public boolean redrawPreview;
 
+    public float zoom(){return zoom;}
+
     public static class Touch {
         public final int pointer;
         public float x;

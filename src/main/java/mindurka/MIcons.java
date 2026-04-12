@@ -23,6 +23,8 @@ public class MIcons {
     public static final TextureRegionDrawable fortsPlotToggle = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 0, 128, 128));
     public static final TextureRegionDrawable fortsPlotCarver = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 0, 128, 128));
     public static final TextureRegionDrawable hubServerConfig = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 256, 0, 128, 128));
+    public static final TextureRegionDrawable castleRoomPlace = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 512, 0, 128, 128));
+    public static final TextureRegionDrawable castleMinerPlacer = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 640, 0, 128, 128));
     public static final TextureRegionDrawable clipboard = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 384, 0, 128, 128));
     public static final TextureRegionDrawable blendNormal = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 0, 128, 128, 128));
     public static final TextureRegionDrawable blendReplace = new TextureRegionDrawable(new TextureRegion(icons.getRegion(), 128, 128, 128, 128));
@@ -49,6 +51,8 @@ public class MIcons {
         Icon.icons.put("fortsPlotToggle", fortsPlotToggle);
         Icon.icons.put("fortsPlotCarver", fortsPlotCarver);
         Icon.icons.put("hubServerConfig", hubServerConfig);
+        Icon.icons.put("castleRoomPlace", castleRoomPlace);
+        Icon.icons.put("castleMinerPlacer", castleMinerPlacer);
         Icon.icons.put("tool-clipboard", clipboard);
         Icon.icons.put("blend-normal", blendNormal);
         Icon.icons.put("blend-replace", blendReplace);

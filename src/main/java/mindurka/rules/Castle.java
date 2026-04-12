@@ -1,11 +1,24 @@
 package mindurka.rules;
 
+import arc.Core;
+import arc.graphics.Color;
+import arc.graphics.g2d.Draw;
+import arc.graphics.g2d.GlyphLayout;
+import arc.graphics.g2d.Lines;
+import arc.graphics.g2d.TextureRegion;
+import arc.math.geom.Vec2;
+import arc.scene.ui.layout.Scl;
 import arc.struct.ObjectIntMap;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.math.geom.Point2;
+import arc.util.Log;
+import arc.util.pooling.Pools;
+import arc.util.serialization.Jval;
+import mindurka.MVars;
 import mindurka.ui.RulesWrite;
 import mindurka.util.Schematic;
+import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
 import mindustry.game.Rules;
@@ -14,15 +27,19 @@ import mindustry.type.Item;
 import mindustry.type.ItemStack;
 import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
+import mindustry.ui.Fonts;
 import mindustry.world.Block;
-import mindustry.world.blocks.defense.turrets.Turret;
 import mindustry.world.meta.Env;
+
+import java.util.Iterator;
 
 import static mindustry.Vars.state;
 
 public class Castle extends Gamemode {
 
     public static final String PREFIX = MRules.PREFIX+".castle";
+    public static final String BLOCKS = PREFIX+".blocks";
+    public static final String MINERS = PREFIX+".miners";
     public static final String UTILS = PREFIX+".utils.";
     public static final String TURRET = PREFIX+".turret.";
     public static final String UNIT = PREFIX+".unit.";
@@ -71,22 +88,53 @@ public class Castle extends Gamemode {
                 for (int i = 0; i < psCount; i++) {
                     platformSource.add(read.r(UTILS+"platformSource."+i, Schematic.EMPTY));
                 }
+                try {
+                    Jval.JsonArray array = Jval.read(read.r(BLOCKS, "[]")).asArray();
+                    array.each(x -> {
+                        try {
+                            Jval.JsonMap obj = x.asObject();
+                            int blockX = obj.get("x").asInt();
+                            int blockY = obj.get("y").asInt();
+                            int cost = obj.get("cost").asInt();
+                            boolean invincible = obj.get("invincible").asBool();
+                            Block block = Vars.content.block(obj.get("block").asString());
+                            blocks.add(new Castle.CastleBlock(block, blockX, blockY, cost,invincible));
+                        } catch (Exception e) {
+                            Log.err("Failed to parse blocks", e);
+                            Vars.ui.showException("Failed to parse blocks", e);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.err("Failed to parse blocks", e);
+                    Vars.ui.showException("Failed to parse blocks", e);
+                }
+                try {
+                    Jval.JsonArray array = Jval.read(read.r(MINERS, "[]")).asArray();
+                    array.each(x -> {
+                        try {
+                            Jval.JsonMap obj = x.asObject();
+                            int blockX = obj.get("x").asInt();
+                            int blockY = obj.get("y").asInt();
+                            int cost = obj.get("cost").asInt();
+                            int amount = obj.get("amount").asInt();
+                            int interval = obj.get("interval").asInt();
+                            Block block = Vars.content.block(obj.get("block").asString());
+                            Item item = Vars.content.item(obj.get("item").asString().toLowerCase());
+                            miners.add(new Castle.CastleMiner(block, blockX, blockY, cost,amount,interval,item));
+                        } catch (Exception e) {
+                            Log.err("Failed to parse miners", e);
+                            Vars.ui.showException("Failed to parse miners", e);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.err("Failed to parse miners", e);
+                    Vars.ui.showException("Failed to parse miners", e);
+                }
             }
         }
 
         @Override
         public void writeGamemodeRules(RulesWrite write) {
-            write.tree("@rules.mindurka.castle.turret", turretRoot -> {
-                for (Block b : mindustry.Vars.content.blocks()) {
-                    if (!(b instanceof Turret)) continue;
-                    Turret t = (Turret) b;
-                    turretRoot.tree(t.localizedName + t.emoji(), cfg -> {
-                        cfg.i("rules.mindurka.castle.turret.cost",
-                                () -> blockCostFor(t),
-                                v -> blockCostFor(t, v));
-                    });
-                }
-            });
             write.tree("@rules.mindurka.castle.unit", unitRoot -> {
                 for (UnitType u : mindustry.Vars.content.units()) {
                     unitRoot.tree(u.localizedName + u.emoji(), cfg -> {
@@ -99,24 +147,6 @@ public class Castle extends Gamemode {
                         cfg.i("rules.mindurka.castle.unit.drop",
                                 () -> unitDropFor(u),
                                 v -> unitDropFor(u, v));
-                    });
-                }
-            });
-            write.tree("@rules.mindurka.castle.item", itemRoot -> {
-                for (Item i : mindustry.Vars.content.items()) {
-                    itemRoot.tree(i.localizedName + i.emoji(), cfg -> {
-                        cfg.i("rules.mindurka.castle.item.cost",
-                                () -> itemCostFor(i),
-                                v -> itemCostFor(i, v));
-                        cfg.i("rules.mindurka.castle.item.interval",
-                                () -> itemIntervalFor(i),
-                                v -> itemIntervalFor(i, v));
-                        cfg.i("rules.mindurka.castle.item.amount",
-                                () -> itemAmountFor(i),
-                                v -> itemAmountFor(i, v));
-                        cfg.block("rules.mindurka.castle.drill",
-                                d -> drillFor(i, d),
-                                () -> drillFor(i)).filter(d -> true);
                     });
                 }
             });
@@ -172,13 +202,92 @@ public class Castle extends Gamemode {
             toRemove.each(rules.tags::remove);
         }
 
+        @Override
+        public void drawEditorGuides() {
+            for (int i = 0; i < blocks.size; i++) {
+                Castle.CastleBlock block = blocks.items[i];
+
+                int offset = block.block.size / 2 * -1;
+                Vec2 v1 = MVars.mapView.unproject(block.x + offset, block.y + offset);
+                float sx = v1.x;
+                float sy = v1.y;
+                Vec2 v2 = MVars.mapView.unproject(block.x + offset + block.block.size, block.y + offset + block.block.size);
+
+                Draw.reset();
+                TextureRegion region = block.block.uiIcon;
+                if (region != null && region.found()) {
+                    Draw.rect(region, (sx + v2.x) / 2, (sy + v2.y) / 2, v2.x - sx, v2.y - sy);
+                }
+
+                GlyphLayout layout = Pools.obtain(GlyphLayout.class, GlyphLayout::new);
+                Fonts.outline.getData().setScale(0.5f * Scl.scl(15) / (128 / MVars.mapView.zoom()));
+                String label =Core.bundle.get("rules.mindurka.castle.block.cost")+": "+block.cost+"\n"+
+                        Core.bundle.get("rules.status.invincible")+": "+block.invincible;
+                layout.setText(Fonts.outline, label);
+
+                float cx = (sx + v2.x) / 2;
+                float cy = (sy + v2.y) / 2;
+                float tx = cx + layout.width / 2;
+                float ty = cy + layout.height / 2;
+
+                Fonts.outline.draw(label, tx, ty, 0, 0, false);
+
+                Pools.free(layout);
+                Fonts.outline.getData().setScale(1f);
+                Fonts.outline.setColor(Color.white);
+
+                Draw.reset();
+                Draw.color(Color.white);
+                Lines.rect(sx, sy, v2.x - sx, v2.y - sy);
+            }
+            for (int i = 0; i < miners.size; i++) {
+                Castle.CastleMiner miner = miners.items[i];
+
+                int offset = miner.block.size / 2 * -1;
+                Vec2 v1 = MVars.mapView.unproject(miner.x + offset, miner.y + offset);
+                float sx = v1.x;
+                float sy = v1.y;
+                Vec2 v2 = MVars.mapView.unproject(miner.x + offset + miner.block.size, miner.y + offset + miner.block.size);
+
+                Draw.reset();
+                TextureRegion region = miner.block.uiIcon;
+                if (region != null && region.found()) {
+                    Draw.rect(region, (sx + v2.x) / 2, (sy + v2.y) / 2, v2.x - sx, v2.y - sy);
+                }
+
+                GlyphLayout layout = Pools.obtain(GlyphLayout.class, GlyphLayout::new);
+                Fonts.outline.getData().setScale(0.5f * Scl.scl(15) / (128 / MVars.mapView.zoom()));
+                String label =
+                        Core.bundle.get("rules.mindurka.castle.item.cost")+": "+miner.cost+"\n"+
+                        Core.bundle.get("rules.mindurka.castle.item.interval")+": "+miner.interval+"\n"+
+                        Core.bundle.get("rules.mindurka.castle.item.amount")+": "+miner.amount+"\n"+
+                        Core.bundle.get("rules.mindurka.castle.item")+": "+miner.item;
+                layout.setText(Fonts.outline, label);
+
+                float cx = (sx + v2.x) / 2;
+                float cy = (sy + v2.y) / 2;
+                float tx = cx + layout.width / 2;
+                float ty = cy + layout.height / 2;
+
+                Fonts.outline.draw(label, tx, ty, 0, 0, false);
+
+                Pools.free(layout);
+                Fonts.outline.getData().setScale(1f);
+                Fonts.outline.setColor(Color.white);
+
+                Draw.reset();
+                Draw.color(Color.white);
+                Lines.rect(sx, sy, v2.x - sx, v2.y - sy);
+            }
+        }
+
         private final ObjectIntMap<Block> blockCostMap = new ObjectIntMap<>();
 
         public int blockCostFor(Block b) {
             if (blockCostMap.containsKey(b)) return blockCostMap.get(b, 0);
             int def;
             try (TagRead read = TagRead.of(rc.rules)) {
-                def = read.r(TURRET + b + COST, CastleCosts.turrets.get((Turret) b, 0));
+                def = read.r(TURRET + b + COST, CastleCosts.turrets.get( b, 0));
             }
             blockCostMap.put(b, def);
             return def;
@@ -517,6 +626,118 @@ public class Castle extends Gamemode {
             shopFloor = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"shopFloor", value); }
             return this;
+        }
+
+        private final Seq<Castle.CastleBlock> blocks = new Seq<>(Castle.CastleBlock.class);
+        public Iterator<Castle.CastleBlock> blocks() { return blocks.iterator(); }
+        public void placeBlock(Castle.CastleBlock block) {
+            blocks.addUnique(block);
+            saveBlocks();
+        }
+        public void removeBlock(Castle.CastleBlock block) {
+            blocks.remove(block);
+            saveBlocks();
+        }
+        private void saveBlocks() {
+            Jval.JsonArray array = new Jval.JsonArray();
+            for (int i = 0; i < blocks.size; i++) {
+                Castle.CastleBlock block = blocks.items[i];
+
+                Jval val = Jval.newObject();
+                Jval.JsonMap obj = val.asObject();
+                obj.put("x", Jval.valueOf(block.x));
+                obj.put("y", Jval.valueOf(block.y));
+                obj.put("block", Jval.valueOf(String.valueOf(block.block)));
+                obj.put("cost", Jval.valueOf(block.cost));
+                obj.put("invincible", Jval.valueOf(block.invincible));
+                array.add(val);
+            }
+            Vars.state.rules.tags.put(BLOCKS, array.toString());
+        }
+        private final Seq<Castle.CastleMiner> miners = new Seq<>(Castle.CastleMiner.class);
+        public Iterator<Castle.CastleMiner> miners() { return miners.iterator(); }
+        public void addMiner(Castle.CastleMiner miner) {
+            miners.addUnique(miner);
+            saveMiners();
+        }
+        public void remMiner(Castle.CastleMiner miner) {
+            miners.remove(miner);
+            saveMiners();
+        }
+        private void saveMiners() {
+            Jval.JsonArray array = new Jval.JsonArray();
+            for (int i = 0; i < miners.size; i++) {
+                Castle.CastleMiner miner = miners.items[i];
+
+                Jval val = Jval.newObject();
+                Jval.JsonMap obj = val.asObject();
+                obj.put("x", Jval.valueOf(miner.x));
+                obj.put("y", Jval.valueOf(miner.y));
+                obj.put("block", Jval.valueOf(String.valueOf(miner.block)));
+                obj.put("cost", Jval.valueOf(miner.cost));
+                obj.put("amount", Jval.valueOf(miner.amount));
+                obj.put("interval", Jval.valueOf(miner.interval));
+                obj.put("item", Jval.valueOf(String.valueOf(miner.item)));
+                array.add(val);
+            }
+            Vars.state.rules.tags.put(MINERS, array.toString());
+        }
+    }
+
+
+    public static class CastleBlock {
+        private final int x;
+        private final int y;
+        private final Block block;
+        private final int cost;
+        private final boolean invincible;
+
+        public CastleBlock(Block block, int x, int y,int cost, boolean invincible) {
+            this.block = block;
+            this.x = x;
+            this.y = y;
+            this.cost = cost;
+            this.invincible = invincible;
+        }
+
+        public boolean contains(int x, int y) {
+            return x >= this.x && x < this.x + this.block.size &&
+                    y >= this.y && y < this.y + this.block.size;
+        }
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof CastleBlock)) return false;
+            CastleBlock other = (CastleBlock) o;
+            return x == other.x && y == other.y && block == other.block;
+        }
+
+        @Override
+        public int hashCode() {
+            return x * 31 + y * 17 + block.hashCode();
+        }
+    }
+    public static class CastleMiner {
+        private final int x;
+        private final int y;
+        private final Block block;
+        private final int cost;
+        private final int amount;
+        private final int interval;
+        private final Item item;
+
+        public CastleMiner(Block block, int x, int y,int cost,int amount,int interval, Item item) {
+            this.block = block;
+            this.x = x;
+            this.y = y;
+            this.cost = cost;
+            this.amount = amount;
+            this.interval = interval;
+            this.item = item;
+        }
+
+        public boolean contains(int x, int y) {
+            return x >= this.x && x < this.x + this.block.size &&
+                    y >= this.y && y < this.y + this.block.size;
         }
     }
 }

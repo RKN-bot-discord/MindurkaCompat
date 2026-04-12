@@ -147,6 +147,7 @@ public abstract class MouseAction {
             if (tile.build != null) MVars.toolOptions.team = tile.team();
 
             if (MVars.toolOptions.selectedBlock.saveData) MVars.toolOptions.selectedBlock.editorPicked(tile);
+            MVars.editorDialog.rebuildBlockOptions();
         }
     }
 

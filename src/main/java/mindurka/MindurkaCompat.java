@@ -43,12 +43,19 @@ public class MindurkaCompat {
                     Injects.load();
                     try {
                         Class<?> eui = Class.forName("MinRi2.PatchEditor.ui.EUI");
-                        Reflect.invoke(eui, null, "mountEditor", Util.noargs);
+                        try {
+                            Reflect.invoke(eui, null, "addUI", Util.noargs);
+                        } catch (Exception ignored) {
+                            Reflect.invoke(eui, null, "mountEditor", Util.noargs);
+                        }
                     } catch (Throwable e) {
-                        Report.withException(e);
+                        Vars.ui.showException("Failed to initialize PatchEditor", e);
+                        Log.err(e);
+                        // Report.withException(e);
                     }
                 }));
             } else Injects.load();
+
 
             ByteBuffer buffer = ByteBuffer.wrap(new byte[12]);
             Vars.netClient.addBinaryPacketHandler("mindurka.setData", packet -> {

@@ -81,7 +81,7 @@ public class LayerToolContext implements ToolContext {
 
     @Override
     public void set(int x, int y, Block block, Floor floor, Block overlay) {
-        if (block != null) actualSetBlock(x, y, block, 0, MVars.toolOptions.team);
+        if (block != null) actualSetBlock(x, y, block, 0, MVars.toolOptions.team());
         Tile tile = Vars.world.tiles.get(x, y);
         if (tile == null) return;
         if (floor != null) actualSetFloor(x, y, floor, (byte) 0);
@@ -90,7 +90,7 @@ public class LayerToolContext implements ToolContext {
 
     @Override
     public void setBlock(int x, int y, Block block) {
-        actualSetBlock(x, y, block, 0, MVars.toolOptions.team);
+        actualSetBlock(x, y, block, 0, MVars.toolOptions.team());
     }
 
     @Override
@@ -108,7 +108,7 @@ public class LayerToolContext implements ToolContext {
         if (block == null) return;
         if (block.isOverlay()) setOverlay(x, y, block);
         else if (block.isFloor()) setFloor(x, y, block.asFloor());
-        else actualSetBlock(x, y, block, 0, MVars.toolOptions.team);
+        else actualSetBlock(x, y, block, 0, MVars.toolOptions.team());
     }
 
     @Override

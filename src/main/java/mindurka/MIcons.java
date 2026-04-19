@@ -61,5 +61,6 @@ public class MIcons {
         Icon.icons.put("forts-plot-locked", fortsPlotLocked);
         Icon.icons.put("forts-plot-static", fortsPlotStatic);
         Icon.icons.put("forts-plot-ghost", fortsPlotGhost);
+        Icon.icons.put("rect", fortsPlotEnabled);
     }
 }

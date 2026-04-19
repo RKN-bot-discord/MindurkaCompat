@@ -32,37 +32,37 @@ public enum EditorTool {
     // - Whatever feels right tbh
     // - Also undo is bound to 'z' and redo to 'Z'
 
-    zoom(KeyCode.unset) { // Only useful on mobile. Use middle click.
-        @Override
-        public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
-            MVars.mapView.mouseAction(MouseAction.Drag.begin(MVars.mapView.mousex(), MVars.mapView.mousey()));
-        }
-    },
+    // zoom(KeyCode.unset) { // Only useful on mobile. Use middle click.
+    //     @Override
+    //     public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
+    //         MVars.mapView.mouseAction(MouseAction.Drag.begin(MVars.mapView.mousex(), MVars.mapView.mousey()));
+    //     }
+    // },
     // FIXME: Replace with eraser state.
-    eraser(KeyCode.unset) { // Only useful on mobile. Use right click.
-        @Override
-        public void start(ToolContext ctx) {
-            mapbits(ctx).zero();
-        }
+    // eraser(KeyCode.unset) { // Only useful on mobile. Use right click.
+    //     @Override
+    //     public void start(ToolContext ctx) {
+    //         mapbits(ctx).zero();
+    //     }
 
-        @Override
-        public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
-            if (ctx.isLayer()) ctx = EraseToolContext.i;
+    //     @Override
+    //     public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
+    //         if (ctx.isLayer()) ctx = EraseToolContext.i;
 
-            BitMap bits = mapbits(ctx);
+    //         BitMap bits = mapbits(ctx);
 
-            final ToolContext finalCtx = ctx;
-            EditorTool.line(oldx, oldy, newx, newy, (x, y) -> {
-                EditorTool.circle(x, y, MVars.toolOptions.radius, (x$1, y$1) -> {
-                    if (!finalCtx.unsizedBlocks() && !(finalCtx instanceof PreviewToolContext)) {
-                        if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::toggled)) return;
-                        EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::enable);
-                    }
-                    finalCtx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock);
-                });
-            });
-        }
-    },
+    //         final ToolContext finalCtx = ctx;
+    //         EditorTool.line(oldx, oldy, newx, newy, (x, y) -> {
+    //             EditorTool.circle(x, y, MVars.toolOptions.radius, (x$1, y$1) -> {
+    //                 if (!finalCtx.unsizedBlocks() && !(finalCtx instanceof PreviewToolContext)) {
+    //                     if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::toggled)) return;
+    //                     EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::enable);
+    //                 }
+    //                 finalCtx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock);
+    //             });
+    //         });
+    //     }
+    // },
     pencil(KeyCode.a) { // This is useful on not just mobile. Use left click.
         @Override
         public void start(ToolContext ctx) {
@@ -79,10 +79,10 @@ public enum EditorTool {
                         if (bits.toggled(x$1, y$1)) return;
                         bits.enable(x$1, y$1);
                     } else if (!ctx.unsizedBlocks() && !(ctx instanceof PreviewToolContext)) {
-                        if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::toggled)) return;
-                        EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::enable);
+                        if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock().size, bits::toggled)) return;
+                        EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock().size, bits::enable);
                     }
-                    ctx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock);
+                    ctx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock());
                 });
             });
         }
@@ -95,21 +95,28 @@ public enum EditorTool {
         @Override
         public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
             if (!(ctx instanceof PreviewToolContext)) return;
-            ctx.setAny(newx, newy, MVars.toolOptions.selectedBlock);
+            ctx.setAny(newx, newy, MVars.toolOptions.selectedBlock());
         }
 
         @Override
         public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) {
+            boolean shift = Core.input.keyDown(KeyCode.shiftLeft) || Core.input.keyDown(KeyCode.shiftRight);
+
             BitMap bits = mapbits(ctx);
             bits.zero();
+
+            if (shift) {
+                if (Math.abs(x1 - x2) < Math.abs(y1 - y2)) x2 = x1;
+                else y2 = y1;
+            }
 
             EditorTool.line(x1, y1, x2, y2, (x, y) -> {
                 EditorTool.circle(x, y, MVars.toolOptions.radius, (x$1, y$1) -> {
                     if (!ctx.unsizedBlocks()) {
-                        if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::toggled)) return;
-                        EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock.size, bits::enable);
+                        if (EditorTool.squareAny(x$1, y$1, MVars.toolOptions.selectedBlock().size, bits::toggled)) return;
+                        EditorTool.square(x$1, y$1, MVars.toolOptions.selectedBlock().size, bits::enable);
                     }
-                    ctx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock);
+                    ctx.setAny(x$1, y$1, MVars.toolOptions.selectedBlock());
                 });
             });
         }
@@ -123,7 +130,7 @@ public enum EditorTool {
         @Override
         public void touched(ToolContext ctx, int x1, int y1, int x2, int y2) {
             if (!ctx.isLayer()) {
-                ctx.setAny(x2, y2, MVars.toolOptions.selectedBlock);
+                ctx.setAny(x2, y2, MVars.toolOptions.selectedBlock());
                 return;
             }
             BitMap bits = mapbits(ctx);
@@ -132,12 +139,12 @@ public enum EditorTool {
 
             EditorTool.line(x1, y1, x2, y2, (x, y) -> {
                 if (x < 0 || y < 0 || x >= ctx.width() || y >= ctx.height()) return;
-                Block target = MVars.toolOptions.selectedBlock.isOverlay()
+                Block target = MVars.toolOptions.selectedBlock().isOverlay()
                         ? ctx.overlay(x, y)
-                        : MVars.toolOptions.selectedBlock.isFloor()
+                        : MVars.toolOptions.selectedBlock().isFloor()
                         ? ctx.floor(x, y)
                         : ctx.block(x, y);
-                if (ctx.block(x, y) == MVars.toolOptions.selectedBlock) return;
+                if (ctx.block(x, y) == MVars.toolOptions.selectedBlock()) return;
 
                 points.add(Util.packxy(x2, y2));
 
@@ -147,12 +154,12 @@ public enum EditorTool {
                     int py = Util.unpacky(point);
                     if (bits.toggled(px, py)) continue;
                     if (px < 0 || py < 0 || px >= ctx.width() || py >= ctx.height()) continue;
-                    if ((MVars.toolOptions.selectedBlock.isOverlay()
+                    if ((MVars.toolOptions.selectedBlock().isOverlay()
                             ? ctx.overlay(px, py)
-                            : MVars.toolOptions.selectedBlock.isFloor()
+                            : MVars.toolOptions.selectedBlock().isFloor()
                             ? ctx.floor(px, py)
                             : ctx.block(px, py)) != target) continue;
-                    ctx.setAny(px, py, MVars.toolOptions.selectedBlock);
+                    ctx.setAny(px, py, MVars.toolOptions.selectedBlock());
                     bits.enable(px, py);
 
                     points.add(Util.packxy(px + 1, py));
@@ -163,9 +170,47 @@ public enum EditorTool {
             });
         }
     },
+    rect(KeyCode.f) {
+        {
+            draggable = Drag.Line;
+        }
+
+        @Override
+        public void touched(ToolContext ctx, int oldx, int oldy, int newx, int newy) {
+            if (!(ctx instanceof PreviewToolContext)) return;
+            ctx.setAny(newx, newy, MVars.toolOptions.selectedBlock());
+        }
+
+        @Override
+        public void touchedLine(ToolContext ctx, int x1, int y1, int x2, int y2) {
+            boolean shift = Core.input.keyDown(KeyCode.shiftLeft) || Core.input.keyDown(KeyCode.shiftRight);
+
+            Block block = MVars.toolOptions.selectedBlock();
+            int size = block.size;
+            int shiftx = x1 % size;
+            int shifty = y1 % size;
+
+            if (shift) {
+                int dst = Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)) / size * size;
+                int signx = x2 >= x1 ? 1 : -1;
+                int signy = y2 >= y1 ? 1 : -1;
+
+                x2 = x1 + dst * signx;
+                y2 = y1 + dst * signy;
+            }
+
+            int minx = Math.min(x1, x2) / size * size + shiftx;
+            int miny = Math.min(y1, y2) / size * size + shifty;
+            int maxx = Math.max(x1, x2) / size * size + shiftx;
+            int maxy = Math.max(y1, y2) / size * size + shifty;
+
+            for (int i = minx; i <= maxx; i += size) for (int o = miny; o <= maxy; o += size) ctx.setAny(i, o, block);
+        }
+    },
     // TODO: Make this thing work or smth.
     clipboard(KeyCode.c),
 
+    // TODO: Make those into modes.
     // Forts tools.
     fortsPlotCarver(KeyCode.q) {
         {
@@ -192,7 +237,7 @@ public enum EditorTool {
                                 (ctx instanceof EraseToolContext)
                                         ? FortsPlotState.disabled
                                         : MVars.toolOptions.fortsPlotState,
-                                MVars.toolOptions.team);
+                                MVars.toolOptions.team());
             });
         }
 

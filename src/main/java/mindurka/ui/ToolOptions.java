@@ -14,11 +14,40 @@ import mindustry.world.Block;
 
 
 public class ToolOptions {
+    public static class Slot {
+        public Block selectedBlock = Blocks.coreShard;
+        public Team team = Team.sharded;
+
+        public void reset() {
+            selectedBlock = Blocks.stone;
+            team = Team.sharded;
+        }
+    }
+
+    // uwu
+    public Slot[] available = new Slot[] {
+            new Slot(), new Slot(), new Slot(), new Slot(), new Slot(),
+            new Slot(), new Slot(), new Slot(), new Slot(), new Slot(),
+    };
+    public Slot current = available[0];
+
     public boolean fortsCarverPlace = true;
     public int radius = 1;
-    public Block selectedBlock = Blocks.coreShard;
-    public Team team = Team.sharded;
     public EditorTool tool = EditorTool.pencil;
+    public EditorMode mode = EditorMode.normal;
+
+    public Block selectedBlock() {
+        if (mode.downsizeBlock) {
+            if (current.selectedBlock.isOverlay()) return Blocks.oreCopper;
+            else if (current.selectedBlock.isFloor()) return Blocks.stone;
+            else return Blocks.stoneWall;
+        }
+
+        return current.selectedBlock;
+    }
+    public Team team() {
+        return current.team;
+    }
 
     public @Nullable BitMap fakeCliffsMap;
     public boolean cliffAuto;
@@ -84,9 +113,10 @@ public class ToolOptions {
     }
 
     public void reset() {
-        selectedBlock = Blocks.stone;
-        team = Team.sharded;
+        for (Slot slot : available) slot.reset();
+
         tool = EditorTool.pencil;
+        mode = EditorMode.normal;
         radius = 1;
         fortsCarverPlace = true;
         fortsPlotState = FortsPlotState.enabled;

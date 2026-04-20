@@ -140,14 +140,13 @@ public abstract class MouseAction {
             if (point.x >= Vars.world.width() || point.y >= Vars.world.width()) return;
             Tile tile = Vars.world.tile(point.x, point.y);
 
-            if (tile.block() != Blocks.air) MVars.toolOptions.selectedBlock = tile.block();
-            else if (tile.overlay() != Blocks.air) MVars.toolOptions.selectedBlock = tile.overlay();
-            else MVars.toolOptions.selectedBlock = tile.floor();
+            if (tile.block() != Blocks.air) MVars.toolOptions.current.selectedBlock = tile.block();
+            else if (tile.overlay() != Blocks.air) MVars.toolOptions.current.selectedBlock = tile.overlay();
+            else MVars.toolOptions.current.selectedBlock = tile.floor();
 
-            if (tile.build != null) MVars.toolOptions.team = tile.team();
+            if (tile.build != null) MVars.toolOptions.current.team = tile.team();
 
-            if (MVars.toolOptions.selectedBlock.saveData) MVars.toolOptions.selectedBlock.editorPicked(tile);
-            MVars.editorDialog.rebuildBlockOptions();
+            if (MVars.toolOptions.current.selectedBlock.saveData) MVars.toolOptions.current.selectedBlock.editorPicked(tile);
         }
     }
 

@@ -299,8 +299,8 @@ public class OEditorDialog extends MapEditorDialog {
                         button.margin(4f);
                         button.getImageCell().grow();
                         button.getStyle().imageUpColor = team.color;
-                        button.clicked(() -> MVars.toolOptions.team = team);
-                        button.update(() -> button.setChecked(MVars.toolOptions.team == team));
+                        button.clicked(() -> MVars.toolOptions.current.team = team);
+                        button.update(() -> button.setChecked(MVars.toolOptions.current.team == team));
                         row.add(button).size(size, size).left();
                         i++;
                     }
@@ -320,6 +320,26 @@ public class OEditorDialog extends MapEditorDialog {
                         rebuildBlockOptions();
                     });
                     button.update(() -> button.setChecked(MVars.toolOptions.tool == tool));
+                    // buttons.add(button);
+
+                    // Label mode = new Label("");
+                    // mode.setColor(Pal.remove);
+                    // mode.update(() -> mode.setText(tool.mode == -1 ? "" : "M" + (tool.mode + 1) + " "));
+                    // mode.setAlignment(Align.bottomRight, Align.bottomRight);
+                    // mode.touchable = Touchable.disabled;
+
+                    tools.stack(button);
+                };
+                Cons<EditorMode> addMode = mode -> {
+                    ImageButton button = new ImageButton(Vars.ui.getIcon(mode.name()), Styles.squareTogglei);
+                    button.clicked(() -> {
+                        MVars.toolOptions.mode = button.isChecked() ? mode : EditorMode.normal;
+                        if (lastTable[0] != null) {
+                            lastTable[0].remove();
+                        }
+                        rebuildBlockOptions();
+                    });
+                    button.update(() -> button.setChecked(MVars.toolOptions.mode == mode));
                     // buttons.add(button);
 
                     // Label mode = new Label("");
@@ -357,12 +377,13 @@ public class OEditorDialog extends MapEditorDialog {
                     redo.update(() -> redo.getImage().setColor(editor.canRedo() ? Color.white : Color.gray));
                     grid.update(() -> grid.setChecked(view.isGrid()));
 
-                    addTool.get(EditorTool.zoom);
-                    addTool.get(EditorTool.eraser);
+                    addMode.get(EditorMode.zoom);
+                    addMode.get(EditorMode.eraser);
                     tools.row();
                     addTool.get(EditorTool.pencil);
                     addTool.get(EditorTool.line);
                     addTool.get(EditorTool.fill);
+                    addTool.get(EditorTool.rect);
 
                     if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.forts) {
                         tools.row();
@@ -438,11 +459,11 @@ public class OEditorDialog extends MapEditorDialog {
                     .name("editor/search").maxTextLength(Vars.maxNameLength).get().setMessageText("@players.search");
         }).growX().pad(-2).padLeft(6f);
         cont.row();
-        cont.table(Tex.underline, extra -> extra.labelWrap(() -> MVars.toolOptions.selectedBlock.localizedName).width(cols * 50f).center()).growX();
+        cont.table(Tex.underline, extra -> extra.labelWrap(() -> MVars.toolOptions.current.selectedBlock.localizedName).width(cols * 50f).center()).growX();
         cont.row();
         cont.collapser(t -> {
             configTable[0] = t;
-        }, () -> MVars.toolOptions.selectedBlock != null && MVars.toolOptions.selectedBlock.editorConfigurable).with(c -> c.setEnforceMinSize(true)).growX().row();
+        }, () -> MVars.toolOptions.current.selectedBlock != null && MVars.toolOptions.current.selectedBlock.editorConfigurable).with(c -> c.setEnforceMinSize(true)).growX().row();
         cont.add(blocksPane).expandY().growX().top().left();
 
         rebuildBlockSelection("");
@@ -478,15 +499,15 @@ public class OEditorDialog extends MapEditorDialog {
             ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNoneTogglei);
             button.getStyle().imageUp = new TextureRegionDrawable(region);
             button.clicked(() -> {
-                MVars.toolOptions.selectedBlock = block;
+                MVars.toolOptions.current.selectedBlock = block;
                 rebuildBlockOptions();
             });
             button.resizeImage(8 * 4f);
-            button.update(() -> button.setChecked(MVars.toolOptions.selectedBlock == block));
-            button.setChecked(MVars.toolOptions.selectedBlock == block);
+            button.update(() -> button.setChecked(MVars.toolOptions.current.selectedBlock == block));
+            button.setChecked(MVars.toolOptions.current.selectedBlock == block);
             blockSelection.add(button).size(50f).tooltip(block.localizedName).left();
 
-            if (i == 0) MVars.toolOptions.selectedBlock = block;
+            if (i == 0) MVars.toolOptions.current.selectedBlock = block;
 
             if (++i % cols == 0) {
                 blockSelection.row();
@@ -524,7 +545,7 @@ public class OEditorDialog extends MapEditorDialog {
         }).margin(4).left().growX().fillX();
         blockOptions.row();
 
-        if (MVars.toolOptions.selectedBlock.isFloor() && !MVars.toolOptions.selectedBlock.isOverlay()) blockOptions.table(t -> {
+        if (MVars.toolOptions.current.selectedBlock.isFloor() && !MVars.toolOptions.current.selectedBlock.isOverlay()) blockOptions.table(t -> {
             t.label(() -> "@mindurka.floorasoverlays").left().pad(4f);
 
             {
@@ -558,7 +579,7 @@ public class OEditorDialog extends MapEditorDialog {
         }).margin(4).left().growX().fillX();
         blockOptions.row();
 
-        if (MVars.toolOptions.selectedBlock == Blocks.cliff) {
+        if (MVars.toolOptions.current.selectedBlock == Blocks.cliff) {
             Table root = new Table();
             Table table = new Table();
 
@@ -654,10 +675,22 @@ public class OEditorDialog extends MapEditorDialog {
             blockOptions.row();
         }
 
-        if (MVars.toolOptions.selectedBlock.editorConfigurable)
-            MVars.toolOptions.selectedBlock.buildEditorConfig(blockOptions);
+        if (MVars.toolOptions.current.selectedBlock.editorConfigurable)
+            MVars.toolOptions.current.selectedBlock.buildEditorConfig(blockOptions);
     }
 
+    private final KeyCode[] keysSlots = new KeyCode[] {
+            KeyCode.num1,
+            KeyCode.num2,
+            KeyCode.num3,
+            KeyCode.num4,
+            KeyCode.num5,
+            KeyCode.num6,
+            KeyCode.num7,
+            KeyCode.num8,
+            KeyCode.num9,
+            KeyCode.num0,
+    };
     private void doInput(){
         if (Core.input.ctrl() && Core.input.shift()) {
             if (Core.input.keyTap(KeyCode.z) && view.editorAction == null) editor.redo();
@@ -688,6 +721,12 @@ public class OEditorDialog extends MapEditorDialog {
                 if (tool.key() == KeyCode.unset) continue;
                 if (!Core.input.keyTap(tool.key())) continue;
                 MVars.toolOptions.tool = tool;
+            }
+
+            for (int i = 0; i < keysSlots.length; i++) {
+                if (!Core.input.keyTap(keysSlots[i])) continue;
+                MVars.toolOptions.current = MVars.toolOptions.available[i];
+                MVars.editorDialog.rebuildBlockOptions();
             }
         }
 

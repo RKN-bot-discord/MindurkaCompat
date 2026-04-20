@@ -110,7 +110,7 @@ public class EditorTile extends Tile {
     public void placeEnded(Block type) {
         if (!type.saveData) return;
 
-        type.placeEnded(this, null, 0, MVars.toolOptions.selectedBlock.lastConfig);
+        type.placeEnded(this, null, 0, MVars.toolOptions.selectedBlock().lastConfig);
     }
 
     @Override

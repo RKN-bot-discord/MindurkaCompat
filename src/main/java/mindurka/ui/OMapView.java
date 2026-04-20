@@ -179,13 +179,10 @@ public class OMapView extends MapView {
                         prev.clicked(OMapView.this, x, y);
                         redrawPreview = true;
                         return true;
-                    } else {
-                        mousea = MouseAction.Draw.begin(x, y, MVars.toolOptions.tool);
-                    }
+                    } else mousea = MVars.toolOptions.mode.drawAction(x, y);
                 } else if (button == KeyCode.mouseRight) {
                     // No, I refuse to use the lastTool bullshit for this.
-                    if (editorAction == null)
-                        mousea = MouseAction.Erase.begin(x, y, MVars.toolOptions.tool);
+                    if (editorAction == null) mousea = MVars.toolOptions.mode.eraseAction(x, y);
                     else {
                         editorAction = null;
                         redrawPreview = true;
@@ -386,7 +383,7 @@ public class OMapView extends MapView {
             if (gamemode != null) gamemode.drawEditorGuides();
         }
 
-        if (MVars.toolOptions.selectedBlock == Blocks.cliff) {
+        if (MVars.toolOptions.current.selectedBlock == Blocks.cliff) {
             Vars.world.tiles.eachTile(tile -> {
                 if (tile.block() == Blocks.cliff) {
                     Draw.color(Color.valueOf("66887755"));
@@ -403,7 +400,7 @@ public class OMapView extends MapView {
 
         if (editorAction != null) {
             editorAction.preview(this, mousex, mousey);
-        } else if (!(mousea instanceof MouseAction.Drag || mousea instanceof MouseAction.CtrlZoom || MVars.toolOptions.tool == EditorTool.zoom)) {
+        } else if (!(mousea instanceof MouseAction.Drag || mousea instanceof MouseAction.CtrlZoom)) {
             boolean rescan = mousex != prevx || mousey != prevy || redrawPreview;
 
             if (previewMap == null || previewMap.bitmap.width != Vars.world.width() || previewMap.bitmap.height != Vars.world.height()) {

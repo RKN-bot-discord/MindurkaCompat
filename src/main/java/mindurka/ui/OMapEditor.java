@@ -159,6 +159,7 @@ public class OMapEditor extends MapEditor {
     }
 
     public void undoCurrentOp() {
+        if (currentOp == null) return;
         DrawOperation that = currentOp;
         that.maybeCompress();
         currentOp = null;

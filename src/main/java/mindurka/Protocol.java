@@ -89,7 +89,8 @@ public class Protocol {
 
         Vars.net.handleClient(Packets.Connect.class, packet -> {
             Log.info("Connecting to server: @", packet.addressTCP);
-            addressTCP = packet.addressTCP;
+            int idx = packet.addressTCP.indexOf('/');
+            addressTCP = idx <= 0 ? packet.addressTCP : packet.addressTCP.substring(idx);
 
             Vars.player.admin = false;
 

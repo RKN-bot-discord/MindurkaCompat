@@ -87,56 +87,71 @@ public abstract class Gamemode {
         public void editingResumed() {}
     }
 
-     public static Gamemode UNKNOWN = new Gamemode() {
-         @Override
-         public String name() {
-             return "unknown";
-         }
+    public static Gamemode UNKNOWN = new Gamemode() {
+        @Override
+        public String name() {
+            return "unknown";
+        }
 
-         @Override
-         Impl create(RulesContext rc) {
-             return new Impl(rc) {
-                 @Override void remove() {}
-                 @Override
-                 protected void _setRules() {}
-             };
-         }
-     };
+        @Override
+        Impl create(RulesContext rc) {
+            return new Impl(rc) {
+                @Override void remove() {}
+                @Override
+                protected void _setRules() {}
+            };
+        }
+    };
 
-     /**
-      * A unique name for this gamemode.
-      * <p>
-      * This is an internal name, for localized name use {@link arc.Core#bundle}.
-      */
-     public abstract String name();
-     /**
-      * Create an instance of this gamemode.
-      * <p>
-      * This method is used by {@link MRules} and is not intended to be called
-      * directly.
-      */
-     abstract Impl create(RulesContext rc);
+    /**
+     * A unique name for this gamemode.
+     * <p>
+     * This is an internal name, for localized name use {@link arc.Core#bundle}.
+     */
+    public abstract String name();
+    /**
+     * Create an instance of this gamemode.
+     * <p>
+     * This method is used by {@link MRules} and is not intended to be called
+     * directly.
+     */
+    abstract Impl create(RulesContext rc);
 
-     private static final OrderedMap<String, Gamemode> factories = new OrderedMap<>();
+    /**
+     * Whether it is safe to keep vanilla rules.
+     * <p>
+     * For a vanilla gamemode, {@link Impl#setRules()} will never be called.
+     */
+    public boolean vanillaGamemode = false;
+    /**
+     * Whether the gamemode appears in gamemode list.
+     */
+    public boolean visible = true;
+    private static final OrderedMap<String, Gamemode> factories = new OrderedMap<>();
 
-     public static void addGamemode(Gamemode factory) {
-         factories.put(factory.name(), factory);
-     }
+    public static void addGamemode(Gamemode factory) {
+        factories.put(factory.name(), factory);
+    }
 
-     private static boolean initialized = false;
-     public static void init() {
-         if (initialized) throw new IllegalStateException("Already initialized");
-         initialized = true;
+    private static boolean initialized = false;
+    public static void init() {
+        if (initialized) throw new IllegalStateException("Already initialized");
+        initialized = true;
 
-         addGamemode(Gamemodes.forts);
-         addGamemode(Gamemodes.hub);
-         addGamemode(Gamemodes.castle);
-     }
-     public static @Nullable Gamemode forName(String name) {
-         return factories.get(name);
-     }
+        addGamemode(Gamemodes.attack);
+        addGamemode(Gamemodes.hexed);
+        addGamemode(Gamemodes.hub);
+        addGamemode(Gamemodes.forts);
+        addGamemode(Gamemodes.castle);
+        addGamemode(Gamemodes.pvp);
+        addGamemode(Gamemodes.spvp);
+        addGamemode(Gamemodes.survival);
+    }
+    public static @Nullable Gamemode forName(String name) {
+        return factories.get(name);
+    }
 
-     public static Seq<String> keys() {
-         return factories.orderedKeys();
-     }
+    public static Seq<String> keys() {
+        return factories.orderedKeys();
+    }
 }

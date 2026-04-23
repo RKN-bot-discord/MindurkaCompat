@@ -151,8 +151,8 @@ public class EditorTile extends Tile {
     }
 
     private void updateStatic() {
-        cachedArgs2[0] = new Short(x);
-        cachedArgs2[1] = new Short(y);
+        cachedArgs2[0] = (int) x;
+        cachedArgs2[1] = (int) y;
         Reflect.invoke(EditorRenderer.class, MVars.mapEditor.renderer, "updateStatic", cachedArgs2, int.class, int.class);
     }
 

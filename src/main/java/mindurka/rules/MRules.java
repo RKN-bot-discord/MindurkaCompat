@@ -116,7 +116,7 @@ public class MRules {
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());
             rules.tags.put(PATCH, MVars.version + "");
-            if (!Core.input.shift()) gamemode.setRules();
+            if (!Core.input.shift() && !gamemode.factory().vanillaGamemode) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
 
@@ -146,6 +146,7 @@ public class MRules {
                 addItem.add("mindurka.gamemode.none", null);
                 for (String gamemodeName : Gamemode.keys()) {
                     Gamemode gamemode = Gamemode.forName(gamemodeName);
+                    if (!gamemode.visible) continue;
                     addItem.add("mindurka.gamemode." + gamemodeName, gamemode);
                 }
             }, value -> {

@@ -120,7 +120,7 @@ public abstract class MouseAction {
 
         @Override
         void move(float newX, float newY) {
-            moving++;
+            if (mouseX != newX || mouseY != newY) moving++;
             MVars.mapView.moveByScaled(newX - mouseX, newY - mouseY);
             mouseX = newX;
             mouseY = newY;

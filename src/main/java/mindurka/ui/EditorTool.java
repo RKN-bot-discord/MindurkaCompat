@@ -412,7 +412,10 @@ public enum EditorTool {
                 for (Item item : Vars.content.items()) {
                     if(i%6==0) t.row();
                     ImageButton button = new ImageButton(item.fullIcon, Styles.squareTogglei);
-                    button.clicked(() -> MVars.toolOptions.selectedItemCastle = item);
+                    button.clicked(() -> {
+                        MVars.toolOptions.selectedItemCastle = item;
+                        MVars.editorDialog.rebuildBlockOptions();
+                    });
                     button.update(() -> button.setChecked(MVars.toolOptions.selectedItemCastle == item));
                     t.add(button).size(size, size).left().tooltip(item.localizedName);
                     i++;

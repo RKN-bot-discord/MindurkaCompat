@@ -45,7 +45,7 @@ public class Castle extends Gamemode {
     public static final String UNIT = PREFIX+".unit.";
     public static final String ITEM = PREFIX+".item.";
     public static final String STATUS = PREFIX+".status.";
-    public static final String NAME = "castle";
+    public static final String NAME = "castle-wars";
     public static final String COST = ".cost";
     public static final String INCOME = ".income";
     public static final String INTERVAL = ".interval";

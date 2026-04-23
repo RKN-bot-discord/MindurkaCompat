@@ -726,7 +726,7 @@ public class OEditorDialog extends MapEditorDialog {
             for (int i = 0; i < keysSlots.length; i++) {
                 if (!Core.input.keyTap(keysSlots[i])) continue;
                 MVars.toolOptions.current = MVars.toolOptions.available[i];
-                MVars.editorDialog.rebuildBlockOptions();
+                rebuildBlockOptions();
             }
         }
 

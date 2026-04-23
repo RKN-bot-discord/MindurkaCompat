@@ -11,6 +11,7 @@ import mindurka.rules.MRules;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.editor.MapEditor;
+import mindustry.game.Rules;
 import mindustry.io.MapIO;
 import mindustry.maps.Map;
 import mindustry.mod.DataPatcher;
@@ -27,6 +28,9 @@ public class OMapEditor extends MapEditor {
     private DrawOperation currentOp;
     private Seq<DrawOperation> undoStack;
     private Seq<DrawOperation> redoStack;
+    private Seq<Rules> rulesUndoStack;
+    private Seq<Rules> rulesRedoStack;
+    private boolean rulesPushOnChange;
 
     public boolean undoing = false;
 
@@ -59,6 +63,8 @@ public class OMapEditor extends MapEditor {
         MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         undoStack = new Seq<>(16);
         redoStack = new Seq<>(4);
+        rulesUndoStack = new Seq<>(4);
+        rulesRedoStack = new Seq<>(2);
         loading = false;
     }
 
@@ -204,6 +210,24 @@ public class OMapEditor extends MapEditor {
         }
         currentOp = null;
         undoing = false;
+    }
+
+    public void activateRulesStack() {
+        rulesPushOnChange = true;
+    }
+
+    public void pushRulesChanged() {
+        if (!rulesPushOnChange) return;
+        rulesPushOnChange = false;
+        rulesRedoStack.clear();
+        rulesUndoStack.add(Vars.state.rules.copy());
+    }
+
+    public void rulesUndo() {
+        if (rulesUndoStack.isEmpty()) return;
+        rulesPushOnChange = true;
+    }
+    public void rulesRedo() {
     }
 
     @Override

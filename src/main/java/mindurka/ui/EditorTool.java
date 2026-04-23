@@ -339,43 +339,45 @@ public enum EditorTool {
 
         @Override
         public void touched(ToolContext ctx, int x1, int y1, int x2, int y2) {
-            if (ctx instanceof PreviewToolContext) {
-                int size = MVars.toolOptions.current.selectedBlock.size;
-                int bx = x2 - size / 2;
-                int by = y2 - size / 2;
-                for (int dx = 0; dx < size; dx++) {
-                    for (int dy = 0; dy < size; dy++) {
-                        ((PreviewToolContext) ctx).bitmap.enable(bx + dx, by + dy);
-                    }
-                }
-                PreviewToolContext p = (PreviewToolContext) ctx;
-                p.hasRegion = true;
-                p.startx = bx;
-                p.starty = by;
-                p.endx = bx + size - 1;
-                p.endy = by + size - 1;
-                return;
-            }
-            Log.info(ctx.toString());
-            if (ctx.isErase()) {
-                a: while (true) {
-                    for (Iterator<Castle.CastleBlock> it = ((Castle.Impl) MVars.rules.gamemode()).blocks(); it.hasNext();) {
-                        Castle.CastleBlock block = it.next();
-                        if (block.contains(x1, y1)) {
-                            ((Castle.Impl) MVars.rules.gamemode()).removeBlock(block);
-                            continue a;
+            try {
+                if (ctx instanceof PreviewToolContext) {
+                    int size = MVars.toolOptions.current.selectedBlock.size;
+                    int bx = x2 - size / 2;
+                    int by = y2 - size / 2;
+                    for (int dx = 0; dx < size; dx++) {
+                        for (int dy = 0; dy < size; dy++) {
+                            ((PreviewToolContext) ctx).bitmap.enable(bx + dx, by + dy);
                         }
                     }
-                    break;
+                    PreviewToolContext p = (PreviewToolContext) ctx;
+                    p.hasRegion = true;
+                    p.startx = bx;
+                    p.starty = by;
+                    p.endx = bx + size - 1;
+                    p.endy = by + size - 1;
+                    return;
                 }
-            } else {
-                if (ctx.isLayer()) {
-                    int bx = x1;
-                    int by = y1;
-                    Castle.CastleBlock b = new Castle.CastleBlock(MVars.toolOptions.current.selectedBlock, bx, by, MVars.toolOptions.blockCost, MVars.toolOptions.invincible || MVars.toolOptions.current.selectedBlock instanceof Turret);
-                    ((Castle.Impl) MVars.rules.gamemode()).placeBlock(b);
+                if (ctx.isErase()) {
+                    a:
+                    while (true) {
+                        for (Iterator<Castle.CastleBlock> it = ((Castle.Impl) MVars.rules.gamemode()).blocks(); it.hasNext(); ) {
+                            Castle.CastleBlock block = it.next();
+                            if (block.contains(x1, y1)) {
+                                ((Castle.Impl) MVars.rules.gamemode()).removeBlock(block);
+                                continue a;
+                            }
+                        }
+                        break;
+                    }
+                } else {
+                    if (ctx.isLayer()) {
+                        int bx = x1;
+                        int by = y1;
+                        Castle.CastleBlock b = new Castle.CastleBlock(MVars.toolOptions.current.selectedBlock, bx, by, MVars.toolOptions.blockCost, MVars.toolOptions.invincible || MVars.toolOptions.current.selectedBlock instanceof Turret);
+                        ((Castle.Impl) MVars.rules.gamemode()).placeBlock(b);
+                    }
                 }
-            }
+            }catch (NumberFormatException | NullPointerException ignored) {}//idc
         }
     },
     castleMinerPlacer(KeyCode.w) {
@@ -425,42 +427,44 @@ public enum EditorTool {
 
         @Override
         public void touched(ToolContext ctx, int x1, int y1, int x2, int y2) {
-            if (ctx instanceof PreviewToolContext) {
-                int size = MVars.toolOptions.current.selectedBlock.size;
-                int bx = x2 - size / 2;
-                int by = y2 - size / 2;
-                for (int dx = 0; dx < size; dx++) {
-                    for (int dy = 0; dy < size; dy++) {
-                        ((PreviewToolContext) ctx).bitmap.enable(bx + dx, by + dy);
-                    }
-                }
-                PreviewToolContext p = (PreviewToolContext) ctx;
-                p.hasRegion = true;
-                p.startx = bx;
-                p.starty = by;
-                p.endx = bx + size - 1;
-                p.endy = by + size - 1;
-                return;
-            };
-            if (ctx.isErase()) {
-                a: while (true) {
-                    for (Iterator<Castle.CastleMiner> it = ((Castle.Impl) MVars.rules.gamemode()).miners(); it.hasNext();) {
-                        Castle.CastleMiner miner = it.next();
-                        if (miner.contains(x1, y1)) {
-                            ((Castle.Impl) MVars.rules.gamemode()).remMiner(miner);
-                            continue a;
+            try {
+                if (ctx instanceof PreviewToolContext) {
+                    int size = MVars.toolOptions.current.selectedBlock.size;
+                    int bx = x2 - size / 2;
+                    int by = y2 - size / 2;
+                    for (int dx = 0; dx < size; dx++) {
+                        for (int dy = 0; dy < size; dy++) {
+                            ((PreviewToolContext) ctx).bitmap.enable(bx + dx, by + dy);
                         }
                     }
-                    break;
+                    PreviewToolContext p = (PreviewToolContext) ctx;
+                    p.hasRegion = true;
+                    p.startx = bx;
+                    p.starty = by;
+                    p.endx = bx + size - 1;
+                    p.endy = by + size - 1;
+                    return;
+                };
+                if (ctx.isErase()) {
+                    a: while (true) {
+                        for (Iterator<Castle.CastleMiner> it = ((Castle.Impl) MVars.rules.gamemode()).miners(); it.hasNext();) {
+                            Castle.CastleMiner miner = it.next();
+                            if (miner.contains(x1, y1)) {
+                                ((Castle.Impl) MVars.rules.gamemode()).remMiner(miner);
+                                continue a;
+                            }
+                        }
+                        break;
+                    }
+                } else {
+                    if (ctx.isLayer()) {
+                        int bx = x1;
+                        int by = y1;
+                        Castle.CastleMiner b = new Castle.CastleMiner(MVars.toolOptions.current.selectedBlock, bx, by, MVars.toolOptions.minerCost, MVars.toolOptions.minerAmount, MVars.toolOptions.minerInterval,MVars.toolOptions.selectedItemCastle);
+                        ((Castle.Impl) MVars.rules.gamemode()).addMiner(b);
+                    }
                 }
-            } else {
-                if (ctx.isLayer()) {
-                    int bx = x1;
-                    int by = y1;
-                    Castle.CastleMiner b = new Castle.CastleMiner(MVars.toolOptions.current.selectedBlock, bx, by, MVars.toolOptions.minerCost, MVars.toolOptions.minerAmount, MVars.toolOptions.minerInterval,MVars.toolOptions.selectedItemCastle);
-                    ((Castle.Impl) MVars.rules.gamemode()).addMiner(b);
-                }
-            }
+            }catch (NumberFormatException | NullPointerException ignored) {}//idc
         }
     },
 

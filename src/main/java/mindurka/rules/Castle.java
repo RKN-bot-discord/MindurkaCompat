@@ -81,6 +81,7 @@ public class Castle extends Gamemode {
                 attackUnitCap = read.r(UTILS+"attackUnitCap", -1);
                 defenseUnitCap = read.r(UTILS+"defenseUnitCap", 75);
                 divideCap = read.r(UTILS+"divideCap", true);
+                mirrored = read.r(UTILS+"mirrored", true);
                 betterGroundValid = read.r(UTILS+"betterGroundValid", true);
                 noPlatform = read.r(UTILS+"noPlatform", false);
                 platformSource = new Seq<>();
@@ -187,6 +188,7 @@ public class Castle extends Gamemode {
                     this::removePlatformSource);
             write.spacer();
 
+            write.b("rules.mindurka.castle.mirrored",       this::mirrored,       this::mirrored);
             write.b("rules.mindurka.castle.noPlatform",       this::noPlatform,       this::noPlatform);
             write.b("rules.mindurka.castle.betterGroundValid", this::betterGroundValid, this::betterGroundValid);
             write.block("rules.mindurka.castle.shopFloor",    this::shopFloor,        this::shopFloor);
@@ -617,6 +619,14 @@ public class Castle extends Gamemode {
         public Impl noPlatform(boolean value) {
             noPlatform = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"noPlatform", value); }
+            return this;
+        }
+
+        private boolean mirrored;
+        public boolean mirrored() { return mirrored; }
+        public Impl mirrored(boolean value) {
+            mirrored = value;
+            try (TagWrite write = TagWrite.of(rc.rules)) { write.w(UTILS+"mirrored", value); }
             return this;
         }
 

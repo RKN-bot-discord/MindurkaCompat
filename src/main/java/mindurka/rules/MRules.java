@@ -31,6 +31,7 @@ public class MRules {
 
     private final Rules rules;
     private final int mapWidth, mapHeight;
+    public final int originalPatchVer;
 
     public MRules(Rules rules) { this(rules, Vars.world.width(), Vars.world.height()); }
     public MRules(Rules rules, int mapWidth, int mapHeight) {
@@ -42,10 +43,12 @@ public class MRules {
             @Nullable String format = rules.tags.get(FORMAT);
             if (format == null) {
                 legacyServer = true;
+                originalPatchVer = 0;
                 return;
             }
             if (!format.equals(FORMAT_VER)) {
                 Vars.ui.showErrorMessage("MindurkaCompat: Invalid format verison " + FORMAT_VER);
+                originalPatchVer = 0;
                 return;
             }
         }
@@ -62,14 +65,19 @@ public class MRules {
             if (gamemodeName == null) {
                 legacyServer = true;
                 Vars.ui.showErrorMessage("MindurkaCompat: Format version 1 requires gamemode to be specified.");
+                originalPatchVer = 0;
                 return;
             }
+            try (TagRead read = TagRead.of(rc.rules)) { originalPatchVer = read.r(PATCH, 0); }
             @Nullable Gamemode factory = Gamemode.forName(gamemodeName);
             if (factory == null) {
                 Log.err("Unknown gamemode '" + gamemodeName + "', some features may not be supported.");
                 gamemode = Gamemode.UNKNOWN.create(rc);
             }
-            else gamemode = factory.create(rc);
+            else {
+                gamemode = factory.create(rc);
+                gamemode.dataFixer();
+            }
         }
 
         try (TagRead read = TagRead.of(rc.rules)) {

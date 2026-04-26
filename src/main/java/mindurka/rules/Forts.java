@@ -11,10 +11,12 @@ import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
 import mindustry.content.Planets;
+import mindustry.content.UnitTypes;
 import mindustry.game.Rules;
 import mindustry.game.Team;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
+import mindustry.type.UnitType;
 import mindustry.world.Block;
 
 import java.io.IOException;
@@ -461,6 +463,15 @@ public class Forts extends Gamemode {
         }
 
         @Override
+        public void dataFixer() {
+            if (MVars.rules.originalPatchVer < 7) {
+                Vars.state.rules.bannedUnits.remove(UnitTypes.retusa);
+                Vars.state.rules.bannedBlocks.remove(Blocks.overflowGate);
+                Vars.state.rules.unitPayloadUpdate = true;
+            }
+        }
+
+        @Override
         void remove() {
             final Rules rules = rc.rules;
 
@@ -616,6 +627,8 @@ public class Forts extends Gamemode {
                     Blocks.tileLogicDisplay
             );
             rules.hideBannedBlocks = true;
+            rules.unitPayloadUpdate = true;
+            rules.bannedUnits.clear();
             rc.customRules.overdriveIgnoresCheat(true);
         }
 

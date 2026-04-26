@@ -85,6 +85,7 @@ public abstract class Gamemode {
         public void drawEditorGuides() {}
         public void onStart() {}
         public void editingResumed() {}
+        public void dataFixer() {}
     }
 
     public static Gamemode UNKNOWN = new Gamemode() {

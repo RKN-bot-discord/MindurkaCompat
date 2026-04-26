@@ -143,6 +143,7 @@ public abstract class Gamemode {
         addGamemode(Gamemodes.hexed);
         addGamemode(Gamemodes.hub);
         addGamemode(Gamemodes.forts);
+        addGamemode(Gamemodes.castle);
         addGamemode(Gamemodes.pvp);
         addGamemode(Gamemodes.spvp);
         addGamemode(Gamemodes.survival);

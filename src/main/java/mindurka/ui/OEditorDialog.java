@@ -286,15 +286,23 @@ public class OEditorDialog extends MapEditorDialog {
             {
                 mid.top();
 
-                mid.table(t -> {
-                    for (Team team : Team.baseTeams) {
+                mid.table(row -> {
+                    Seq<Team> baseTeams = Seq.with(Team.baseTeams);
+                    Seq<Team> coreTeams = Seq.with(Team.all)
+                            .select(t -> t != null && !t.cores().isEmpty() && !baseTeams.contains(t));
+
+                    Seq<Team> teams = baseTeams.addAll(coreTeams);
+                    int i = 0;
+                    for (Team team : teams) {
+                        if (i > 0 && i % 6 == 0) row.row();
                         ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNoneTogglei);
                         button.margin(4f);
                         button.getImageCell().grow();
                         button.getStyle().imageUpColor = team.color;
                         button.clicked(() -> MVars.toolOptions.current.team = team);
                         button.update(() -> button.setChecked(MVars.toolOptions.current.team == team));
-                        t.add(button).size(size, size).left();
+                        row.add(button).size(size, size).left();
+                        i++;
                     }
                 }).growX().left();
                 mid.row();
@@ -386,6 +394,11 @@ public class OEditorDialog extends MapEditorDialog {
                     if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.hub) {
                         tools.row();
                         addTool.get(EditorTool.hubServerConfig);
+                    }
+                    if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.castle) {
+                        tools.row();
+                        addTool.get(EditorTool.castleRoomPlace);
+                        addTool.get(EditorTool.castleMinerPlacer);
                     }
                 };
                 refreshTools.run();
@@ -713,7 +726,7 @@ public class OEditorDialog extends MapEditorDialog {
             for (int i = 0; i < keysSlots.length; i++) {
                 if (!Core.input.keyTap(keysSlots[i])) continue;
                 MVars.toolOptions.current = MVars.toolOptions.available[i];
-                MVars.editorDialog.rebuildBlockOptions();
+                rebuildBlockOptions();
             }
         }
 

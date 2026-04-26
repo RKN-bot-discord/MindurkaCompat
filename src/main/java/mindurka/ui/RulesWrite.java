@@ -12,6 +12,7 @@ import arc.func.Intc;
 import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
+import arc.math.geom.Point2;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.ButtonGroup;
@@ -36,8 +37,13 @@ import mindustry.gen.Tex;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
+import mindustry.world.blocks.environment.Floor;
+
+import mindurka.MVars;
 
 /**
  * Utility class for writing rules.
@@ -137,6 +143,34 @@ public class RulesWrite {
             });
         }).left().pad(6).fill(false).expand(false, false).row();
     }
+    public <T> void selectionRaw(String key, Cons<AddItem<T>> addItem, Cons<T> onClick, T def) {
+        if (!shouldAdd(key)) return;
+
+        root.table(Tex.button, t -> {
+            t.margin(10f);
+            ButtonGroup<?> group = new ButtonGroup<>();
+            TextButton.TextButtonStyle style = Styles.flatTogglet;
+
+            t.defaults().size(140f, 50f);
+
+            final Seq<TextButton> buttons = new Seq<>();
+
+            addItem.get((name, value) -> {
+                Cell<TextButton>[] button = new Cell[1];
+
+                button[0] = t.button(name, style, () -> {
+                    buttons.each(x -> x.setChecked(false));
+                    button[0].get().setChecked(true);
+                    onClick.get(value);
+                }).group(group);
+
+                button[0].get().setChecked(value == null ? def == null : value.equals(def));
+
+                if (buttons.size % 3 == 2) button[0].row();
+                buttons.add(button[0].get());
+            });
+        }).left().pad(6).row();
+    }
 
     public static class BoolCtl {
         public static final BoolCtl throwaway = new BoolCtl();
@@ -164,6 +198,49 @@ public class RulesWrite {
     }
     public BoolCtl b(String tlKey, Boolp def, Boolc onClick) {
         return w(tlKey, def, onClick);
+    }
+
+    public static class StrCtl {
+        public static final StrCtl throwaway = new StrCtl();
+
+        public Boolp enabled = TRUE;
+        public StrCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+
+        String _prevValue;
+    }
+
+    public StrCtl s(String tlKey, Prov<String> def, Cons<String> onClick) {
+        if (!shouldAdd(tlKey)) return StrCtl.throwaway;
+
+        final StrCtl ctl = new StrCtl();
+        ctl._prevValue = def.get();
+
+        Cell<Table> cell = root.table(t -> {
+            t.left();
+            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            final TextField[] field = new TextField[1];
+            field[0] = t.field(ctl._prevValue, s -> {
+                        ctl._prevValue = s;
+                        onClick.get(s);
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        String v = def.get();
+                        boolean notFocused = a.getScene() == null || a.getScene().getKeyboardFocus() != a;
+                        if (notFocused || !v.equals(ctl._prevValue)) {
+                            ctl._prevValue = v;
+                            a.setText(v);
+                        }
+                    }).marginTop(0).marginBottom(0).width(120f).left().get();
+        }).padTop(0);
+        cell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
     }
 
     public static class IntCtl {
@@ -234,6 +311,162 @@ public class RulesWrite {
     }
     public IntCtl i(String tlKey, Intp def, Intc onClick) {
         return w(tlKey, def, onClick);
+    }
+
+    public static class PointCtl {
+        public static final PointCtl throwaway = new PointCtl();
+
+        public Boolp enabled = TRUE;
+        public PointCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+
+        int _prevX, _prevY;
+    }
+    public PointCtl point(String tlKey, Prov<Point2> def, Cons<Point2> onClick) {
+        if (!shouldAdd(tlKey)) return PointCtl.throwaway;
+
+        final PointCtl ctl = new PointCtl();
+        ctl._prevX = def.get().x;
+        ctl._prevY = def.get().y;
+
+        Cell<Table> cell = root.table(t -> {
+            t.left();
+            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            t.field(ctl._prevX + "", s -> {
+                        int v = Strings.parseInt(s);
+                        ctl._prevX = v;
+                        onClick.get(new Point2(ctl._prevX, ctl._prevY));
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        int v = def.get().x;
+                        if (ctl._prevX != v) { ctl._prevX = v; a.setText(v + ""); }
+                    }).marginTop(0).marginBottom(0)
+                    .valid(f -> Strings.canParseInt(f)).width(80f).left();
+            t.add("  ").padLeft(2).padRight(2);
+            t.field(ctl._prevY + "", s -> {
+                        int v = Strings.parseInt(s);
+                        ctl._prevY = v;
+                        onClick.get(new Point2(ctl._prevX, ctl._prevY));
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        int v = def.get().y;
+                        if (ctl._prevY != v) { ctl._prevY = v; a.setText(v + ""); }
+                    }).marginTop(0).marginBottom(0)
+                    .valid(f -> Strings.canParseInt(f)).width(80f).left();
+        }).padTop(0);
+        cell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
+    }
+
+    public static class PointsCtl {
+        public static final PointsCtl throwaway = new PointsCtl();
+
+        public Boolp enabled = TRUE;
+        public PointsCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+    }
+    public PointsCtl points(String tlKey, Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
+        if (!shouldAdd(tlKey)) return PointsCtl.throwaway;
+
+        final PointsCtl ctl = new PointsCtl();
+        final Seq<Point2> current = new Seq<>(def.get());
+        final Table[] rowsTable = {null};
+
+        Cell<Table> outerCell = root.table(outer -> {
+            outer.left();
+            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            outer.table(inner -> {
+                rowsTable[0] = inner;
+                rebuildPointRows(inner, current, ctl, def, onClick);
+            }).left();
+        }).padTop(0);
+        outerCell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
+    }
+
+    private void pickPoint(Cons<Point2> callback) {
+        MVars.mapView.editorAction = new mindurka.rules.PointEditorAction(p -> {
+            callback.get(p);
+            MVars.customRulesDialog.show();
+        });
+        MVars.customRulesDialog.hide();
+    }
+
+    private void rebuildPointRows(Table t, Seq<Point2> current, PointsCtl ctl,
+                                  Prov<Seq<Point2>> def, Cons<Seq<Point2>> onClick) {
+        t.clear();
+        t.defaults().left();
+
+        // + picks a tile in the world and appends it
+        t.button("+", () -> pickPoint(p -> {
+            current.add(p);
+            onClick.get(new Seq<>(current));
+            rebuildPointRows(t, current, ctl, def, onClick);
+        })).size(32f).padBottom(2).left().row();
+
+        for (int idx = 0; idx < current.size; idx++) {
+            final int i = idx;
+            final int[] prev = {current.get(i).x, current.get(i).y};
+
+            t.table(row -> {
+                // "~" button: re-pick this entry's position from the world
+                row.button("~", () -> pickPoint(p -> {
+                    prev[0] = p.x;
+                    prev[1] = p.y;
+                    current.set(i, p);
+                    onClick.get(new Seq<>(current));
+                })).size(32f).padRight(4).left();
+
+                row.field(prev[0] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[0] = v;
+                            current.set(i, new Point2(v, current.get(i).y));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<Point2> d = def.get();
+                            if (i < d.size && d.get(i).x != prev[0]) {
+                                prev[0] = d.get(i).x;
+                                a.setText(prev[0] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+                row.add("  ").padLeft(2).padRight(2);
+                row.field(prev[1] + "", s -> {
+                            int v = Strings.parseInt(s);
+                            prev[1] = v;
+                            current.set(i, new Point2(current.get(i).x, v));
+                            onClick.get(new Seq<>(current));
+                        })
+                        .update(a -> {
+                            a.setDisabled(!ctl.enabled.get());
+                            Seq<Point2> d = def.get();
+                            if (i < d.size && d.get(i).y != prev[1]) {
+                                prev[1] = d.get(i).y;
+                                a.setText(prev[1] + "");
+                            }
+                        })
+                        .valid(Strings::canParseInt).width(80f).marginTop(0).marginBottom(0).left();
+                row.button("-", () -> {
+                    current.remove(i);
+                    onClick.get(new Seq<>(current));
+                    rebuildPointRows(t, current, ctl, def, onClick);
+                }).size(32f).padLeft(4).left();
+            }).left().row();
+        }
     }
 
     public static class FloatCtl {
@@ -424,7 +657,7 @@ public class RulesWrite {
         }
         for (Team team : Team.all) {
             if (dataList.containsKey(team)) continue;
-            if (!enabled.get(team)) continue;
+            if (!enabled.get(team) && team.core()==null) continue;
             dataList.put(team, new TeamData(team));
         }
 
@@ -456,6 +689,10 @@ public class RulesWrite {
                 update(() -> {
                     b.setDisabled(!ctl.enabled.get());
                     b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
             b.add("@"+tlKey);
@@ -463,6 +700,113 @@ public class RulesWrite {
             Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
             image.setDrawable(new TextureRegionDrawable(block.uiIcon, 4f / Math.min(block.uiIcon.width, block.uiIcon.height)));
             onClick.get(block);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+
+    public static class UnitCtl {
+        private Boolf<UnitType> filter = unit -> true;
+
+        public UnitCtl filter(Boolf<UnitType> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public UnitCtl unit(String tlKey, Cons<UnitType> onClick, Prov<UnitType> def) {
+        if (!shouldAdd(tlKey)) return new UnitCtl();
+
+        UnitCtl ctl = new UnitCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new UnitSelectDialog("@" + tlKey).show(ctl.filter, unit -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(unit.uiIcon, 4f / Math.min(unit.uiIcon.width, unit.uiIcon.height)));
+            onClick.get(unit);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+
+    public static class ItemCtl {
+        private Boolf<Item> filter = item -> true;
+
+        public ItemCtl filter(Boolf<Item> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public ItemCtl item(String tlKey, Cons<Item> onClick, Prov<Item> def) {
+        if (!shouldAdd(tlKey)) return new ItemCtl();
+
+        ItemCtl ctl = new ItemCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new ItemSelectDialog("@" + tlKey).show(ctl.filter, item -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(item.uiIcon, 4f / Math.min(item.uiIcon.width, item.uiIcon.height)));
+            onClick.get(item);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+
+    public static class StatusCtl {
+        private Boolp enabled = TRUE;
+        private Boolf<StatusEffect> filter = status -> true;
+
+        public StatusCtl filter(Boolf<StatusEffect> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public StatusCtl status(String tlKey, Cons<StatusEffect> onClick, Prov<StatusEffect> def) {
+        if (!shouldAdd(tlKey)) return new StatusCtl();
+
+        StatusCtl ctl = new StatusCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    b.setDisabled(!ctl.enabled.get());
+                    setDrawable(new TextureRegionDrawable(
+                            def.get().uiIcon,
+                            4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new StatusSelectDialog("@" + tlKey).show(ctl.filter, status -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(status.uiIcon, 4f / Math.min(status.uiIcon.width, status.uiIcon.height)));
+            onClick.get(status);
         }, def.get())).left().width(300f).padLeft(6).row();
 
         return ctl;
@@ -528,6 +872,70 @@ public class RulesWrite {
         return ctl;
     }
 
+    public void platformSources(String tlKey,
+                                Prov<Seq<mindurka.util.Schematic>> def,
+                                Cons<mindurka.util.Schematic> onAdd,
+                                Cons<Integer> onRemove) {
+        if (!shouldAdd(tlKey)) return;
+
+        final Table[] rowsTable = {null};
+
+        root.table(outer -> {
+            outer.left();
+            outer.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0);
+            outer.table(inner -> {
+                rowsTable[0] = inner;
+                rebuildPlatformSourceRows(inner, def, onAdd, onRemove, tlKey);
+            }).left();
+        }).padTop(0).pad(6).left().row();
+        root.row();
+    }
+
+    private void rebuildPlatformSourceRows(Table t,
+                                           Prov<Seq<mindurka.util.Schematic>> def,
+                                           Cons<mindurka.util.Schematic> onAdd,
+                                           Cons<Integer> onRemove,
+                                           String tlKey) {
+        t.clear();
+        t.defaults().left();
+
+        t.button("+", () -> {
+            MVars.mapView.editorAction = new mindurka.rules.SchematicEditorAction(
+                    mindurka.rules.Castle.PLATFORM_SIZE,
+                    mindurka.rules.Castle.PLATFORM_SIZE,
+                    scheme -> {
+                        onAdd.get(scheme);
+                        rebuildPlatformSourceRows(t, def, onAdd, onRemove, tlKey);
+                    }
+            );
+            MVars.customRulesDialog.hide();
+        }).size(32f).padBottom(2).left().row();
+
+        Seq<mindurka.util.Schematic> list = def.get();
+        for (int idx = 0; idx < list.size; idx++) {
+            final int i = idx;
+            StringBuilder platformString = new StringBuilder();
+            StringBuilder stringTemp = new StringBuilder();
+            Seq<Floor> floors = Seq.with(list.get(i).floors);
+            int count = 0;
+            for (int j = floors.size - 1; j >= 0; j--) {
+                stringTemp.insert(0,floors.get(j).emoji());
+                if (++count % 5 == 0){
+                    platformString.append(stringTemp+"\n");
+                    stringTemp.setLength(0);
+                }
+            }
+            t.table(row -> {
+                row.add().size(32f).padRight(4);
+                row.label(() -> (i+1) + ". \n" + platformString).left().padRight(8);
+                row.button("-", () -> {
+                    onRemove.get(i);
+                    rebuildPlatformSourceRows(t, def, onAdd, onRemove, tlKey);
+                }).size(32f).padLeft(4).left();
+            }).left().row();
+        }
+    }
+
     public void spacer() {
         if (!canPlaceSpacer) return;
         canPlaceSpacer = false;
@@ -555,5 +963,151 @@ public class RulesWrite {
     }
     public void category(String name, Cons<RulesWrite> cb) {
         cb.get(category(name));
+    }
+
+    public TreeNode tree(String label, Cons<RulesWrite> contents, boolean expanded) {
+        final TreeNode node = new TreeNode(label, expanded);
+
+        root.button(label, Icon.downOpen, Styles.togglet, () -> node.shown = !node.shown)
+                .width(260).height(55).update(t -> {
+                    ((Image) t.getChildren().get(1)).setDrawable(node.buttonIcon());
+                    t.setChecked(node.shown);
+                }).left().padLeft(14).padBottom(2).row();
+
+        final Table contentTable = new Table();
+        contentTable.left();
+        contentTable.defaults().left();
+
+        root.collapser(c -> {
+            c.add(contentTable).padLeft(14).left().growX().row();
+        }, () -> node.shown).left().padBottom(2).fillX().row();
+
+        final RulesWrite child = new RulesWrite(contentTable, filter);
+        contents.get(child);
+
+        return node;
+    }
+
+    public TreeNode tree(String label, Cons<RulesWrite> contents) {
+        return tree(label, contents, false);
+    }
+
+    public interface AddTreeEntry<T> {
+        void add(String label, T value);
+    }
+
+    public <T> void treeAddEntry(String tlKey,
+                                 Cons<AddTreeEntry<T>> addEntry,
+                                 Cons<T> onClick,
+                                 T def) {
+        treeAddEntry(tlKey, addEntry, onClick, def, (value, child) -> {});
+    }
+
+    public <T> void treeAddEntry(String tlKey,
+                                 Cons<AddTreeEntry<T>> addEntry,
+                                 Cons<T> onClick,
+                                 T def,
+                                 Cons2<T, RulesWrite> sectionConf) {
+        if (!shouldAdd(tlKey)) return;
+
+        final Table container = new Table();
+        root.add(container).fillX().row();
+        container.defaults().left();
+
+        class AddRow {
+            boolean shown = false;
+            final Table mainContainer = new Table();
+
+            TextureRegionDrawable buttonIcon() { return shown ? Icon.downOpen : Icon.upOpen; }
+
+            AddRow() {
+                final Button headerButton = new Button(Styles.togglet);
+
+                final Image arrowIcon = new Image(Icon.upOpen);
+                headerButton.add(arrowIcon).size(Icon.upOpen.imageSize() / Scl.scl(1)).padLeft(4);
+                headerButton.add(new Image(Icon.add)).size(Icon.add.imageSize() / Scl.scl(1)).padLeft(6);
+
+                headerButton.clicked(() -> {
+                    shown = !shown;
+                    arrowIcon.setDrawable(buttonIcon());
+                    headerButton.setChecked(shown);
+                });
+                headerButton.update(() -> {
+                    arrowIcon.setDrawable(buttonIcon());
+                    headerButton.setChecked(shown);
+                });
+
+                mainContainer.add(headerButton)
+                        .marginLeft(14).height(55).padBottom(2).left().row();
+
+                mainContainer.collapser(picker -> {
+                    picker.defaults().left();
+                    picker.table(Tex.button, t -> {
+                        t.margin(10f);
+                        t.defaults().size(140f, 50f);
+                        final Seq<TextButton> buttons = new Seq<>();
+                        final ButtonGroup<?> group = new ButtonGroup<>();
+
+                        addEntry.get((label, value) -> {
+                            @SuppressWarnings("unchecked")
+                            Cell<TextButton>[] btn = new Cell[1];
+                            btn[0] = t.button(label, Styles.flatTogglet, () -> {
+                                buttons.each(b -> b.setChecked(false));
+                                btn[0].get().setChecked(true);
+                                onClick.get(value);
+
+                                final Table nodeTable = new Table();
+                                nodeTable.defaults().left();
+                                final TreeNode node = new TreeNode(label, true);
+
+                                nodeTable.button(label, Icon.downOpen, Styles.togglet,
+                                                () -> node.shown = !node.shown)
+                                        .marginLeft(14).width(260).height(55).update(th -> {
+                                            ((Image) th.getChildren().get(1)).setDrawable(node.buttonIcon());
+                                            th.setChecked(node.shown);
+                                        }).left().padBottom(2).row();
+
+                                nodeTable.collapser(c -> {
+                                    c.defaults().left();
+                                    RulesWrite child = new RulesWrite(c, filter);
+                                    child.parent = RulesWrite.this;
+                                    sectionConf.get(value, child);
+                                }, () -> node.shown).left().padBottom(2).fillX().row();
+
+                                container.removeChild(mainContainer);
+                                container.add(nodeTable).fillX().row();
+                                container.add(mainContainer).fillX().row();
+
+                                shown = false;
+                            }).group(group);
+
+                            btn[0].get().setChecked(value == null ? def == null : value.equals(def));
+                            if (buttons.size % 3 == 2) btn[0].row();
+                            buttons.add(btn[0].get());
+                        });
+                    }).left().pad(6).fill(false).expand(false, false).row();
+                }, () -> shown).left().padBottom(2).fillX().row();
+
+                container.add(mainContainer).fillX().row();
+            }
+        }
+
+        new AddRow();
+    }
+
+    public static class TreeNode {
+        public boolean shown;
+        private final String label;
+
+        TreeNode(String label, boolean shown) {
+            this.label = label;
+            this.shown = shown;
+        }
+
+        TextureRegionDrawable buttonIcon() {
+            return shown ? Icon.downOpen : Icon.upOpen;
+        }
+
+        public String label() { return label; }
     }
 }

@@ -1,7 +1,12 @@
 package mindurka.rules;
 
+import arc.struct.Seq;
+import arc.math.geom.Point2;
 import mindurka.util.Schematic;
 import mindustry.game.Rules;
+import mindustry.type.Item;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
 import mindustry.world.Block;
 
 public class TagWrite implements AutoCloseable {
@@ -35,9 +40,35 @@ public class TagWrite implements AutoCloseable {
         if (rules == null) return;
         rules.tags.put(key, v.name);
     }
+    public void w(String key, UnitType v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
+    public void w(String key, Item v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
+    public void w(String key, StatusEffect v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.name);
+    }
     public void w(String key, String v) {
         if (rules == null) return;
         rules.tags.put(key, v);
+    }
+    public void wPoint(String key, Point2 v) {
+        if (rules == null) return;
+        rules.tags.put(key, v.x + " " + v.y);
+    }
+    public void wPoints(String key, Seq<Point2> v) {
+        if (rules == null) return;
+        if (v == null || v.size == 0) { rules.tags.remove(key); return; }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < v.size; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(v.get(i).x).append(' ').append(v.get(i).y);
+        }
+        rules.tags.put(key, sb.toString());
     }
     public void w(String key, Schematic v) {
         if (rules == null) return;

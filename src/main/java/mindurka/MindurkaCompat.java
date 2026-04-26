@@ -56,6 +56,7 @@ public class MindurkaCompat {
                 }));
             } else Injects.load();
 
+
             ByteBuffer buffer = ByteBuffer.wrap(new byte[12]);
             Vars.netClient.addBinaryPacketHandler("mindurka.setData", packet -> {
                 if (packet.length != 12) {
